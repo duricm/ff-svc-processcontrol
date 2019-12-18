@@ -1,4 +1,4 @@
-# Spring REST Hello World Example
+# Bitcoin Card API
 
 
 ## 1. How to start
