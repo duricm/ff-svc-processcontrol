@@ -79,7 +79,7 @@ public class Card {
 
 
     @Override    public String toString() {
-        return "Book{" +
+        return "Card{" +
                 "id=" + id +
 
                 '}';

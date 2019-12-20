@@ -183,7 +183,7 @@ public class User {
 
 
     @Override    public String toString() {
-        return "Book{" +
+        return "User{" +
                 "id=" + id +
 
                 '}';

@@ -18,13 +18,6 @@ public class BitcoinCardController {
 	
 	private static String url = "jdbc:postgresql://3.136.241.73:5432/bitcoin-card?user=postgres&password=bch_admin&ssl=false";
 	private static Connection conn;
-	 
-
-    // Find
-    @GetMapping("/books")
-    List<User> findAll() {
-        return null;
-    }
 
     // Save
     @PostMapping("/users")
@@ -88,6 +81,10 @@ public class BitcoinCardController {
     User findUser(@PathVariable Long id) {
     	
     	System.out.println("Getting stuff...");
+    	
+    	//BitcoinRestClient brClient = new BitcoinRestClient();
+    	
+    	//brClient.callCardProviderAPI();
     	
     	User u = new User();
     	

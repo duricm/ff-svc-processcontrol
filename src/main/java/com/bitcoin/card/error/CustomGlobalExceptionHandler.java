@@ -12,14 +12,10 @@ import java.io.IOException;
 public class CustomGlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
     // Let Spring handle the exception, we just override the status code
-    @ExceptionHandler(BookNotFoundException.class)
+    @ExceptionHandler(CardNotFoundException.class)
     public void springHandleNotFound(HttpServletResponse response) throws IOException {
         response.sendError(HttpStatus.NOT_FOUND.value());
     }
 
-    @ExceptionHandler(BookUnSupportedFieldPatchException.class)
-    public void springUnSupportedFieldPatch(HttpServletResponse response) throws IOException {
-        response.sendError(HttpStatus.METHOD_NOT_ALLOWED.value());
-    }
 
 }
