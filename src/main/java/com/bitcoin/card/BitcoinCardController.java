@@ -4,6 +4,9 @@ package com.bitcoin.card;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
+import com.bitcoin.card.error.CustomGlobalExceptionHandler;
+import com.bitcoin.card.error.UserNotFoundException;
+
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -24,13 +27,12 @@ public class BitcoinCardController {
     @PostMapping("/users")
     //return 201 instead of 200
     @ResponseStatus(HttpStatus.CREATED)
-    User newUser(@RequestBody User u) {
+    User newUser(@RequestBody User u) throws SQLException {
     	String sql = "insert into users (first_name, last_name, email, phone_number, date_of_birth, gender, is_active, promotional_consent" +
     	", address_street, address_city, address_postal_code, address_state, address_country, default_currency_id, social_security_number" +
     			", created_at, updated_at) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, now(), now())";
 
     	
-    try {
 		if (conn == null)
 			conn = DriverManager.getConnection(url);
 		
@@ -54,14 +56,6 @@ public class BitcoinCardController {
     	stmt.execute();
     	System.out.println("Executed");
 		
-	} catch (SQLException e) {
-		// TODO Auto-generated catch block
-		
-		System.out.println("Error!!!");
-		e.printStackTrace();
-	}
-    	
-    	
         return u;
     }
 
@@ -78,6 +72,7 @@ public class BitcoinCardController {
     }
     
     // Find
+    @ResponseStatus(HttpStatus.OK)
     @GetMapping("/user/{id}")
     User findUser(@PathVariable Long id) {
     	
@@ -95,8 +90,8 @@ public class BitcoinCardController {
     		
     		Statement s = conn.createStatement();
     		ResultSet r = s.executeQuery("select * from users where user_id = " + id);
-
-    		setUserResultParameters(r, u);
+    		
+    		setUserResultParameters(r, u, id.toString());
     		
     	} catch (SQLException e) {
     		// TODO Auto-generated catch block
@@ -107,38 +102,33 @@ public class BitcoinCardController {
     }
     
     // Find
+    @ResponseStatus(HttpStatus.OK)
     @GetMapping("/user-email/{email}")
-    User findUserByEmail(@PathVariable String email) {
+    User findUserByEmail(@PathVariable String email) throws SQLException {
     	
     	System.out.println("Getting stuff...");
     	
     	User u = new User();
-    	
-    	try {
+
     		if (conn == null)
     			conn = DriverManager.getConnection(url);
     		
     		Statement s = conn.createStatement();
     		ResultSet r = s.executeQuery("select * from users where email = " + email);
 
-    		setUserResultParameters(r, u);
+    		setUserResultParameters(r, u, email);
     		
-    	} catch (SQLException e) {
-    		// TODO Auto-generated catch block
-    		e.printStackTrace();
-    	}
-    	
          return u;
     }
 
 
     // Save or update
+    @ResponseStatus(HttpStatus.OK)
     @PutMapping("/user")
-    User saveOrUpdate(@RequestBody User u) {
+    void saveOrUpdate(@RequestBody User u) throws SQLException {
     	
     	String sql = "update users set ";
-    	
-    try {
+ 
 		if (conn == null)
 			conn = DriverManager.getConnection(url);
 		
@@ -172,68 +162,59 @@ public class BitcoinCardController {
 		sql += "updated_at= now() where user_id = " + u.getId();
 		
 		Statement s = conn.createStatement();
-		s.execute(sql);
-
 		
-	} catch (SQLException e) {
-		// TODO Auto-generated catch block
+		int result = s.executeUpdate(sql);
 		
-		System.out.println("Error!!!");
-		e.printStackTrace();
-	}
-
-        return u;
-    }
-
-    // update author only
-    @PatchMapping("/books/{id}")
-    User patch(@RequestBody Map<String, String> update, @PathVariable Long id) {
-
-        return null;
+		System.out.println("MEHMED result is " + result);
+		if (result == 0)
+			throw new UserNotFoundException(u.getId().toString());
 
     }
 
     @DeleteMapping("/user/{id}")
-    void deleteBook(@PathVariable Long id) {
+    void deleteUser(@PathVariable Long id) throws SQLException {
     	
-    	try {
     		if (conn == null)
     			conn = DriverManager.getConnection(url);
     		
     		Statement s = conn.createStatement();
     		boolean result = s.execute("delete from users where user_id = " + id);
 
-    		
-    	} catch (SQLException e) {
-    		// TODO Auto-generated catch block
-    		e.printStackTrace();
-    	}
+    		if (! result)
+    			throw new UserNotFoundException(id.toString());
         
     }
     
-    private void setUserResultParameters(ResultSet r, User u)
+    private void setUserResultParameters(ResultSet r, User u, String userIdentifier)
     {
 		try {
-			r.next();
-			u.setId(r.getLong("user_id"));
-			u.setFirstName(r.getString("first_name"));
-			u.setLastName(r.getString("last_name"));
-			u.setEmail(r.getString("email"));
-			u.setPhoneNumber(r.getString("phone_number"));
-			u.setDateOfBirth(r.getString("date_of_birth"));
-			u.setGender(r.getString("gender"));
-			u.setActive(r.getBoolean("is_active"));
-			u.setPromotioanlConsent(r.getBoolean("promotional_consent"));
-			u.setAddresStreet(r.getString("address_street"));
-			u.setAddressCity(r.getString("address_city"));
-			u.setAddressPostalCode(r.getString("address_postal_code"));
-			u.setAddressState(r.getString("address_state"));
-			u.setAddressCountry(r.getString("address_country"));
-			u.setDefaultCurrencyId(r.getString("default_currency_id"));
-			u.setSocialSecurityNumber(r.getString("social_security_number"));
-			u.setCreatedAt(r.getTimestamp("created_at"));
-			u.setUpdatedAt(r.getTimestamp("updated_at"));
+			
+	    	if (r.next() == false)
+	    		throw new UserNotFoundException(userIdentifier);
+	    	else
+	    	{
+	    		u.setId(r.getLong("user_id"));
+	    		u.setFirstName(r.getString("first_name"));
+	    		u.setLastName(r.getString("last_name"));
+	    		u.setEmail(r.getString("email"));
+	    		u.setPhoneNumber(r.getString("phone_number"));
+	    		u.setDateOfBirth(r.getString("date_of_birth"));
+	    		u.setGender(r.getString("gender"));
+	    		u.setActive(r.getBoolean("is_active"));
+	    		u.setPromotioanlConsent(r.getBoolean("promotional_consent"));
+	    		u.setAddresStreet(r.getString("address_street"));
+	    		u.setAddressCity(r.getString("address_city"));
+	    		u.setAddressPostalCode(r.getString("address_postal_code"));
+	    		u.setAddressState(r.getString("address_state"));
+	    		u.setAddressCountry(r.getString("address_country"));
+	    		u.setDefaultCurrencyId(r.getString("default_currency_id"));
+	    		u.setSocialSecurityNumber(r.getString("social_security_number"));
+	    		u.setCreatedAt(r.getTimestamp("created_at"));
+	    		u.setUpdatedAt(r.getTimestamp("updated_at"));
+	    	}
 		} catch (SQLException e) {
+			
+
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
