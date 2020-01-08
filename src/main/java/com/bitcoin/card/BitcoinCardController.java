@@ -2,11 +2,18 @@ package com.bitcoin.card;
 
 
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 
-import com.bitcoin.card.error.CustomGlobalExceptionHandler;
+import org.apache.commons.io.IOUtils;
+
 import com.bitcoin.card.error.UserNotFoundException;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -69,6 +76,62 @@ public class BitcoinCardController {
     	
     	
         return b;
+    }
+    
+    @GetMapping("/get-text")
+    public @ResponseBody String getText() throws Exception {
+    	
+		if (conn == null)
+			conn = DriverManager.getConnection(url);
+    	
+        final InputStream in = getClass().getResourceAsStream("/card.jpg");
+
+    	PreparedStatement ps = conn.prepareStatement("INSERT INTO user_documents (user_id, document) VALUES (?, ?)");
+    	ps.setInt(1, 2);
+    	ps.setBinaryStream(2, in);
+    	ps.execute();
+    	ps.close();
+
+    	return "Hello world";
+    }
+
+    @GetMapping("/get-image")
+    public @ResponseBody byte[] getImage() throws IOException {
+        final InputStream in = getClass().getResourceAsStream("/card.jpg");
+
+        return IOUtils.toByteArray(in);
+    }
+
+    @GetMapping(value = "/get-image-with-media-type", produces = MediaType.IMAGE_JPEG_VALUE)
+    public @ResponseBody byte[] getImageWithMediaType() throws IOException {
+        final InputStream in = getClass().getResourceAsStream("/card.jpg");
+        return IOUtils.toByteArray(in);
+    }
+
+    @GetMapping(value = "/get-file", produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
+    public @ResponseBody byte[] getFile() throws IOException {
+        final InputStream in = getClass().getResourceAsStream("/pom.xml");
+        return IOUtils.toByteArray(in);
+    }
+ 
+    @GetMapping(value = "/user/{id}/virtual-card", produces = MediaType.IMAGE_JPEG_VALUE)
+    public @ResponseBody byte[] getVirtualCardImage(@PathVariable int id) throws Exception {
+    	
+    	System.out.println("Getting virtual card...");
+    	
+		if (conn == null)
+			conn = DriverManager.getConnection(url);
+    
+    	PreparedStatement ps = conn.prepareStatement("select document from user_documents where user_id = ?");
+    	ps.setInt(1, id);
+    	ResultSet rs = ps.executeQuery();
+
+    	rs.next();
+    	InputStream is = rs.getBinaryStream(1);
+
+    	System.out.println("Byte stream is " + is.toString());
+
+    	return IOUtils.toByteArray(is);
     }
     
     // Find
