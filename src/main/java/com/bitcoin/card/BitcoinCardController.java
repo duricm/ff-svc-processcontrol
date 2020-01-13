@@ -4,7 +4,9 @@ package com.bitcoin.card;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
-
+import org.springframework.web.servlet.ModelAndView;
+import org.springframework.web.servlet.view.RedirectView;
+import org.springframework.web.servlet.view.UrlBasedViewResolver;
 import org.apache.commons.io.IOUtils;
 
 import com.bitcoin.card.error.UserNotFoundException;
@@ -14,6 +16,8 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -114,8 +118,8 @@ public class BitcoinCardController {
         return IOUtils.toByteArray(in);
     }
  
-    @GetMapping(value = "/user/{id}/virtual-card", produces = MediaType.IMAGE_JPEG_VALUE)
-    public @ResponseBody byte[] getVirtualCardImage(@PathVariable int id) throws Exception {
+    @GetMapping(value = "/user/{id}/user-document", produces = MediaType.IMAGE_JPEG_VALUE)
+    public @ResponseBody byte[] getUserDocument(@PathVariable int id) throws Exception {
     	
     	System.out.println("Getting virtual card...");
     	
@@ -133,6 +137,26 @@ public class BitcoinCardController {
 
     	return IOUtils.toByteArray(is);
     }
+    
+    @GetMapping(value = "/user/{id}/virtual-card", produces = MediaType.IMAGE_JPEG_VALUE)
+    public @ResponseBody byte[]  getVirtualCardImage(@PathVariable int id) throws Exception {
+    	
+    	BitcoinRestClient brClient = new BitcoinRestClient();
+    	
+    	String ternioImageUrl = brClient.getTernioImageURL(id);
+    	
+		URL url = new URL(ternioImageUrl);
+		HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+    	
+    	return IOUtils.toByteArray(conn.getInputStream());
+    }
+    
+    @RequestMapping(value = "/forward", method = RequestMethod.GET)
+    public ModelAndView method() {
+        return new ModelAndView("forward:https://assets.ua.gpsrv.com/image?token=KSbYK3Ad43Ed2vTe98VIgsCR1xlS5mb1EozY27a7Oks86dOiM3&config=cashpvs");
+    }
+       
+    
     
     // Find
     @ResponseStatus(HttpStatus.OK)
