@@ -29,8 +29,17 @@ public class User {
     private String addressCountry;
     private String defaultCurrencyId;
     private String socialSecurityNumber;
+    private String userName;
     
-    public String getFirstName() {
+    public String getUserName() {
+		return userName;
+	}
+
+	public void setUserName(String userName) {
+		this.userName = userName;
+	}
+
+	public String getFirstName() {
 		return firstName;
 	}
 

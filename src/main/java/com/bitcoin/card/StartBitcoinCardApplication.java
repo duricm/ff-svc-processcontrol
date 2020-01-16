@@ -9,7 +9,8 @@ public class StartBitcoinCardApplication {
     // start everything
     public static void main(String[] args) {
     	
-    	
+    	System.setProperty("server.servlet.context-path", "/v1");
+
         SpringApplication.run(StartBitcoinCardApplication.class, args);
     }
 

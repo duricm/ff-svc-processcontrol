@@ -26,12 +26,15 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Properties;
 
 @RestController
 public class BitcoinCardController {
 	
-	private static String url = "jdbc:postgresql://3.136.241.73:5432/bitcoin-card?user=postgres&password=bch_admin&ssl=true&sslmode=verify-ca&sslrootcert=./.postgres/root.crt";
+	//private static String url = "jdbc:postgresql://3.136.241.73:5432/bitcoin-card?user=postgres&password=bch_admin&ssl=true&sslmode=verify-ca&sslrootcert=./.postgres/root.crt";
+
+    private static String url = "jdbc:postgresql://bitcoincom-card.cgll0kqdznrn.us-east-2.rds.amazonaws.com:5432/bitcoincard1?user=bch_admin&password=letitsnow890*()&ssl=false";
 	private static Connection conn;
 
     // Save
@@ -41,7 +44,7 @@ public class BitcoinCardController {
     User newUser(@RequestBody User u) throws SQLException {
     	String sql = "insert into users (first_name, last_name, email, phone_number, date_of_birth, gender, is_active, promotional_consent" +
     	", address_street, address_city, address_postal_code, address_state, address_country, default_currency_id, social_security_number" +
-    			", created_at, updated_at) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, now(), now())";
+    			", created_at, updated_at) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, now(), now())";
 
     	
 		if (conn == null)
@@ -63,23 +66,12 @@ public class BitcoinCardController {
     	stmt.setString(13, u.getAddressCountry());
     	stmt.setString(14, u.getDefaultCurrencyId());
     	stmt.setString(15, u.getSocialSecurityNumber());
+    	stmt.setString(16, u.getUserName());
     	System.out.println("Executing...");
     	stmt.execute();
     	System.out.println("Executed");
 		
         return u;
-    }
-
-    // Find
-    @GetMapping("/books/{id}")
-    User findOne(@PathVariable Long id) {
-    	
-    	User b = new User();
-
-    	b.setId(1L);
-    	
-    	
-        return b;
     }
     
     @GetMapping("/get-text")
@@ -114,11 +106,11 @@ public class BitcoinCardController {
 
     @GetMapping(value = "/get-file", produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
     public @ResponseBody byte[] getFile() throws IOException {
-        final InputStream in = getClass().getResourceAsStream("/pom.xml");
+        final InputStream in = getClass().getResourceAsStream("/pom");
         return IOUtils.toByteArray(in);
     }
  
-    @GetMapping(value = "/user/{id}/user-document", produces = MediaType.IMAGE_JPEG_VALUE)
+    @GetMapping(value = "/users/{id}/user-document", produces = MediaType.IMAGE_JPEG_VALUE)
     public @ResponseBody byte[] getUserDocument(@PathVariable int id) throws Exception {
     	
     	System.out.println("Getting virtual card...");
@@ -138,7 +130,7 @@ public class BitcoinCardController {
     	return IOUtils.toByteArray(is);
     }
     
-    @GetMapping(value = "/user/{id}/virtual-card", produces = MediaType.IMAGE_JPEG_VALUE)
+    @GetMapping(value = "/users/{id}/virtual-card", produces = MediaType.IMAGE_JPEG_VALUE)
     public @ResponseBody byte[]  getVirtualCardImage(@PathVariable int id) throws Exception {
     	
     	BitcoinRestClient brClient = new BitcoinRestClient();
@@ -151,23 +143,26 @@ public class BitcoinCardController {
     	return IOUtils.toByteArray(conn.getInputStream());
     }
     
-    @RequestMapping(value = "/forward", method = RequestMethod.GET)
-    public ModelAndView method() {
-        return new ModelAndView("forward:https://assets.ua.gpsrv.com/image?token=KSbYK3Ad43Ed2vTe98VIgsCR1xlS5mb1EozY27a7Oks86dOiM3&config=cashpvs");
-    }
-       
-    
-    
     // Find
     @ResponseStatus(HttpStatus.OK)
-    @GetMapping("/user/{id}")
-    User findUser(@PathVariable Long id) {
+    @GetMapping("/users/search")
+    User findUser(@RequestParam Optional<String> username, @RequestParam Optional<String> email) {
     	
     	System.out.println("Getting stuff...");
+    	String conditionStr = "";
     	
     	//BitcoinRestClient brClient = new BitcoinRestClient();
     	
     	//brClient.callCardProviderAPI();
+    	
+    	if (username.isPresent())
+    		conditionStr = "user_name = '" + username.get();
+    	else
+    		if (email.isPresent())
+    			conditionStr = "email = '" + email.get();
+    		else
+	    		throw new UserNotFoundException("Invalid parameter");
+
     	
     	User u = new User();
     	
@@ -175,43 +170,24 @@ public class BitcoinCardController {
     		if (conn == null)
     			conn = DriverManager.getConnection(url);
     		
-    		Statement s = conn.createStatement();
-    		ResultSet r = s.executeQuery("select * from users where user_id = " + id);
+    		System.out.println("select * from users where " + conditionStr);
     		
-    		setUserResultParameters(r, u, id.toString());
+    		Statement s = conn.createStatement();
+    		ResultSet r = s.executeQuery("select * from users where " + conditionStr + "'");
+    		
+    		setUserResultParameters(r, u, username.orElse(email.orElse("No username or email")));
     		
     	} catch (SQLException e) {
-    		// TODO Auto-generated catch block
     		e.printStackTrace();
     	}
     	
          return u;
     }
     
-    // Find
-    @ResponseStatus(HttpStatus.OK)
-    @GetMapping("/user-email/{email}")
-    User findUserByEmail(@PathVariable String email) throws SQLException {
-    	
-    	System.out.println("Getting stuff...");
-    	
-    	User u = new User();
-
-    		if (conn == null)
-    			conn = DriverManager.getConnection(url);
-    		
-    		Statement s = conn.createStatement();
-    		ResultSet r = s.executeQuery("select * from users where email = " + email);
-
-    		setUserResultParameters(r, u, email);
-    		
-         return u;
-    }
-
 
     // Save or update
     @ResponseStatus(HttpStatus.OK)
-    @PutMapping("/user")
+    @PutMapping("/users")
     void saveOrUpdate(@RequestBody User u) throws SQLException {
     	
     	String sql = "update users set ";
@@ -252,13 +228,12 @@ public class BitcoinCardController {
 		
 		int result = s.executeUpdate(sql);
 		
-		System.out.println("MEHMED result is " + result);
 		if (result == 0)
 			throw new UserNotFoundException(u.getId().toString());
 
     }
 
-    @DeleteMapping("/user/{id}")
+    @DeleteMapping("/users/{id}")
     void deleteUser(@PathVariable Long id) throws SQLException {
     	
     		if (conn == null)
@@ -296,6 +271,7 @@ public class BitcoinCardController {
 	    		u.setAddressCountry(r.getString("address_country"));
 	    		u.setDefaultCurrencyId(r.getString("default_currency_id"));
 	    		u.setSocialSecurityNumber(r.getString("social_security_number"));
+	    		u.setUserName(r.getString("user_name"));
 	    		u.setCreatedAt(r.getTimestamp("created_at"));
 	    		u.setUpdatedAt(r.getTimestamp("updated_at"));
 	    	}
