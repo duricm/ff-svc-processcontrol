@@ -24,10 +24,28 @@
 
     <dependencies>
     
+    <dependency>
+    <groupId>org.apache.httpcomponents</groupId>
+    <artifactId>httpcore</artifactId>
+    </dependency>
+	<dependency>
+	
+
+    
+    <groupId>org.apache.httpcomponents</groupId>
+    <artifactId>httpclient</artifactId>
+    </dependency>
+
     	<dependency>
    		<groupId>org.json</groupId>
    		<artifactId>org.json</artifactId>
    		<version>chargebee-1.0</version>
+	</dependency>
+	
+		<dependency>
+		<groupId>log4j</groupId>
+		<artifactId>log4j</artifactId>
+		<version>1.2.17</version>
 	</dependency>
 
         <!-- spring mvc, rest -->
@@ -68,19 +86,31 @@
             <scope>test</scope>
         </dependency>
 
-        <!-- test patch operation need this -->
-        <dependency>
-            <groupId>org.apache.httpcomponents</groupId>
-            <artifactId>httpclient</artifactId>
-            <version>4.5.7</version>
-            <scope>test</scope>
-        </dependency>
+
 
         <!-- hot swapping, disable cache for template, enable live reload -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-devtools</artifactId>
             <optional>true</optional>
+        </dependency>
+
+		<dependency>
+			<groupId>com.amazonaws</groupId>
+			<artifactId>aws-java-sdk</artifactId>
+			<version>1.11.360</version>
+        </dependency>
+
+		<dependency>
+			<groupId>com.amazonaws</groupId>
+			<artifactId>aws-java-sdk-core</artifactId>
+			<version>1.11.360</version>
+        </dependency>
+        
+        <dependency>
+			<groupId>com.amazonaws</groupId>
+			<artifactId>aws-java-sdk-cognitoidp</artifactId>
+			<version>1.11.360</version>
         </dependency>
 
     </dependencies>

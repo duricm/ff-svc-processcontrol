@@ -2,13 +2,17 @@ package com.bitcoin.card;
 
 
 import org.springframework.http.HttpStatus;
+
+
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.servlet.ModelAndView;
-import org.springframework.web.servlet.view.RedirectView;
-import org.springframework.web.servlet.view.UrlBasedViewResolver;
 import org.apache.commons.io.IOUtils;
 
+import com.amazonaws.auth.ClasspathPropertiesFileCredentialsProvider;
+import com.amazonaws.services.cognitoidp.AWSCognitoIdentityProvider;
+import com.amazonaws.services.cognitoidp.AWSCognitoIdentityProviderClientBuilder;
+import com.amazonaws.services.cognitoidp.model.AdminGetUserRequest;
+import com.amazonaws.services.cognitoidp.model.AdminGetUserResult;
 import com.bitcoin.card.error.UserNotFoundException;
 
 import java.io.File;
@@ -24,19 +28,90 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.List;
-import java.util.Map;
 import java.util.Optional;
-import java.util.Properties;
+
+import org.apache.log4j.Logger;
 
 @RestController
 public class BitcoinCardController {
 	
+	private final Logger LOGGER = Logger.getLogger(this.getClass());
+
 	//private static String url = "jdbc:postgresql://3.136.241.73:5432/bitcoin-card?user=postgres&password=bch_admin&ssl=true&sslmode=verify-ca&sslrootcert=./.postgres/root.crt";
 
     private static String url = "jdbc:postgresql://bitcoincom-card.cgll0kqdznrn.us-east-2.rds.amazonaws.com:5432/bitcoincard1?user=bch_admin&password=letitsnow890*()&ssl=false";
 	private static Connection conn;
 
+    @GetMapping("/cognito")
+	public User getUserInfo() {
+
+    	
+    	/*AmazonCognitoIdentity identityClient = new AmazonCognitoIdentityClient(new AnonymousAWSCredentials());
+		
+    	// send a get id request. This only needs to be executed the first time
+    	// and the result should be cached.
+    	GetIdRequest idRequest = new GetIdRequest();
+    	idRequest.setAccountId("7ljdp8s6flj41urv5eohbngef8");
+    	idRequest.setIdentityPoolId("us-east-1_G7ighQ8h3");
+    	// If you are authenticating your users through an identity provider
+    	// then you can set the Map of tokens in the request
+    	// Map providerTokens = new HashMap();
+    	// providerTokens.put("graph.facebook.com", "facebook session key");
+    	// idRequest.setLogins(providerTokens);
+    				
+    	GetIdResult idResp = identityClient.getId(idRequest);
+    				
+    	String identityId = idResp.getIdentityId();
+    	
+    	System.out.println("Identity id is" + identityId);
+		 */
+    	
+    	
+	       AWSCognitoIdentityProvider cognitoClient = getAmazonCognitoIdentityClient();             
+	AdminGetUserRequest userRequest = new AdminGetUserRequest()
+	                      .withUsername("mcboatface2")
+	                      .withUserPoolId("us-east-1_G7ighQ8h3");
+	 
+	 
+	       AdminGetUserResult userResult = cognitoClient.adminGetUser(userRequest);
+	 
+	       User userResponse = new User();
+	       userResponse.setUserName(userResult.getUsername());
+	       
+	       System.out.println("MFA Settings " + userResult.toString());
+	       //userResponse.setUserStatus(userResult.getUserStatus());
+	       //userResponse.setUserCreateDate(userResult.getUserCreateDate());
+	       //userResponse.setLastModifiedDate(userResult.getUserLastModifiedDate());
+	 
+	 /*      List userAttributes = userResult.getUserAttributes();
+	       for(AttributeTypeattribute: userAttributes) {
+	              if(attribute.getName().equals("custom:companyName")) {
+	                 userResponse.setCompanyName(attribute.getValue());
+	}else if(attribute.getName().equals("custom:companyPosition")) {
+	                 userResponse.setCompanyPosition(attribute.getValue());
+	              }else if(attribute.getName().equals("email")) {
+	                 userResponse.setEmail(attribute.getValue());
+	   
+	              }
+	       }
+	 */
+	        
+	       return userResponse;
+	              
+	}
+	
+	public AWSCognitoIdentityProvider getAmazonCognitoIdentityClient() {
+	      ClasspathPropertiesFileCredentialsProvider propertiesFileCredentialsProvider = 
+	           new ClasspathPropertiesFileCredentialsProvider();
+	      
+	 
+	       return AWSCognitoIdentityProviderClientBuilder.standard()
+	                      .withCredentials(propertiesFileCredentialsProvider)
+	                             .withRegion("us-east-1")
+	                             .build();
+	 
+	   }
+	
     // Save
     @PostMapping("/users")
     //return 201 instead of 200
@@ -45,6 +120,10 @@ public class BitcoinCardController {
     	String sql = "insert into users (first_name, last_name, email, phone_number, date_of_birth, gender, is_active, promotional_consent" +
     	", address_street, address_city, address_postal_code, address_state, address_country, default_currency_id, social_security_number" +
     			", created_at, updated_at) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, now(), now())";
+
+    	LOGGER.info("Adding new user to database...");
+    	LOGGER.info("User data: \n" + u.toString());
+
 
     	
 		if (conn == null)
@@ -67,7 +146,7 @@ public class BitcoinCardController {
     	stmt.setString(14, u.getDefaultCurrencyId());
     	stmt.setString(15, u.getSocialSecurityNumber());
     	stmt.setString(16, u.getUserName());
-    	System.out.println("Executing...");
+    	LOGGER.info("Executing insert statement...");
     	stmt.execute();
     	System.out.println("Executed");
 		
@@ -113,7 +192,7 @@ public class BitcoinCardController {
     @GetMapping(value = "/users/{id}/user-document", produces = MediaType.IMAGE_JPEG_VALUE)
     public @ResponseBody byte[] getUserDocument(@PathVariable int id) throws Exception {
     	
-    	System.out.println("Getting virtual card...");
+    	LOGGER.info("Retrieving user document for user " + id);
     	
 		if (conn == null)
 			conn = DriverManager.getConnection(url);
@@ -125,13 +204,18 @@ public class BitcoinCardController {
     	rs.next();
     	InputStream is = rs.getBinaryStream(1);
 
-    	System.out.println("Byte stream is " + is.toString());
 
+    	LOGGER.info("Retrieved.");
+
+    	
     	return IOUtils.toByteArray(is);
     }
     
     @GetMapping(value = "/users/{id}/virtual-card", produces = MediaType.IMAGE_JPEG_VALUE)
     public @ResponseBody byte[]  getVirtualCardImage(@PathVariable int id) throws Exception {
+    	
+    	LOGGER.info("Retrieving user virtual card for user " + id);
+
     	
     	BitcoinRestClient brClient = new BitcoinRestClient();
     	
@@ -139,6 +223,9 @@ public class BitcoinCardController {
     	
 		URL url = new URL(ternioImageUrl);
 		HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+		
+    	LOGGER.info("Retrieved.");
+
     	
     	return IOUtils.toByteArray(conn.getInputStream());
     }
@@ -148,7 +235,7 @@ public class BitcoinCardController {
     @GetMapping("/users/search")
     User findUser(@RequestParam Optional<String> username, @RequestParam Optional<String> email) {
     	
-    	System.out.println("Getting stuff...");
+    	LOGGER.info("Getting user details...");
     	String conditionStr = "";
     	
     	//BitcoinRestClient brClient = new BitcoinRestClient();
@@ -163,6 +250,7 @@ public class BitcoinCardController {
     		else
 	    		throw new UserNotFoundException("Invalid parameter");
 
+    	LOGGER.info("User query parameter : " + conditionStr);
     	
     	User u = new User();
     	
@@ -178,8 +266,13 @@ public class BitcoinCardController {
     		setUserResultParameters(r, u, username.orElse(email.orElse("No username or email")));
     		
     	} catch (SQLException e) {
+    		
+	    	LOGGER.info("Exception!!!\n" + e.getMessage());
+
     		e.printStackTrace();
     	}
+    	
+    	LOGGER.info("Retrieved user data: \n" + u.toString());
     	
          return u;
     }
@@ -189,6 +282,11 @@ public class BitcoinCardController {
     @ResponseStatus(HttpStatus.OK)
     @PutMapping("/users")
     void saveOrUpdate(@RequestBody User u) throws SQLException {
+    	
+    	LOGGER.info("Updating user data...");
+
+    	LOGGER.info("User data: \n" + u.toString());
+
     	
     	String sql = "update users set ";
  
@@ -236,6 +334,9 @@ public class BitcoinCardController {
     @DeleteMapping("/users/{id}")
     void deleteUser(@PathVariable Long id) throws SQLException {
     	
+    	LOGGER.info("Deleting user: " + id);
+
+    	
     		if (conn == null)
     			conn = DriverManager.getConnection(url);
     		
@@ -244,6 +345,9 @@ public class BitcoinCardController {
 
     		if (! result)
     			throw new UserNotFoundException(id.toString());
+    		
+        	LOGGER.info("Deleted.");
+
         
     }
     
@@ -277,8 +381,8 @@ public class BitcoinCardController {
 	    	}
 		} catch (SQLException e) {
 			
+	    	LOGGER.info("Exception!!!\n" + e.getMessage());
 
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
     	
