@@ -33,9 +33,18 @@ public class CustomGlobalExceptionHandler extends ResponseEntityExceptionHandler
     public void springHandleSQLError(HttpServletResponse response, SQLException sqlE) throws IOException {
 		
 		LOGGER.error("Error!!! Responding with bad request message.");
-
 		
         response.sendError(HttpStatus.BAD_REQUEST.value(), sqlE.getLocalizedMessage());
+       
+    }
+	
+    // Let Spring handle the exception, we just override the status code
+	@ExceptionHandler(UnauthorizedException.class)
+    public void springHandleBadToken(HttpServletResponse response) throws IOException {
+		
+		LOGGER.error("Error!!! Responding with unauthorized user message.");
+		
+        response.sendError(HttpStatus.UNAUTHORIZED.value());
        
     }
     

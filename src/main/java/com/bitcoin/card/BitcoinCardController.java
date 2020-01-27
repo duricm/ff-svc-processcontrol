@@ -15,9 +15,6 @@ import com.amazonaws.services.cognitoidp.model.AdminGetUserRequest;
 import com.amazonaws.services.cognitoidp.model.AdminGetUserResult;
 import com.bitcoin.card.error.UserNotFoundException;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
@@ -32,14 +29,17 @@ import java.util.Optional;
 
 import org.apache.log4j.Logger;
 
+
 @RestController
 public class BitcoinCardController {
 	
 	private final Logger LOGGER = Logger.getLogger(this.getClass());
+	
+	TokenHandler th = new TokenHandler();
 
-	//private static String url = "jdbc:postgresql://3.136.241.73:5432/bitcoin-card?user=postgres&password=bch_admin&ssl=true&sslmode=verify-ca&sslrootcert=./.postgres/root.crt";
+	private static String url = "jdbc:postgresql://3.136.241.73:5432/bitcoin-card?user=postgres&password=bch_admin&ssl=true&sslmode=verify-ca&sslrootcert=./.postgres/root.crt";
 
-    private static String url = "jdbc:postgresql://bitcoincom-card.cgll0kqdznrn.us-east-2.rds.amazonaws.com:5432/bitcoincard1?user=bch_admin&password=letitsnow890*()&ssl=false";
+    //private static String url = "jdbc:postgresql://bitcoincom-card.cgll0kqdznrn.us-east-2.rds.amazonaws.com:5432/bitcoincard1?user=bch_admin&password=letitsnow890*()&ssl=false";
 	private static Connection conn;
 
     @GetMapping("/cognito")
@@ -68,7 +68,7 @@ public class BitcoinCardController {
     	
     	
 	       AWSCognitoIdentityProvider cognitoClient = getAmazonCognitoIdentityClient();             
-	AdminGetUserRequest userRequest = new AdminGetUserRequest()
+	       AdminGetUserRequest userRequest = new AdminGetUserRequest()
 	                      .withUsername("mcboatface2")
 	                      .withUserPoolId("us-east-1_G7ighQ8h3");
 	 
@@ -114,9 +114,8 @@ public class BitcoinCardController {
 	
     // Save
     @PostMapping("/users")
-    //return 201 instead of 200
     @ResponseStatus(HttpStatus.CREATED)
-    User newUser(@RequestBody User u) throws SQLException {
+    User newUser(@RequestBody User u, @RequestHeader(name = "authorization") Optional<String> authorization) throws SQLException {
     	String sql = "insert into users (first_name, last_name, email, phone_number, date_of_birth, gender, is_active, promotional_consent" +
     	", address_street, address_city, address_postal_code, address_state, address_country, default_currency_id, social_security_number" +
     			", created_at, updated_at) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, now(), now())";
@@ -124,7 +123,7 @@ public class BitcoinCardController {
     	LOGGER.info("Adding new user to database...");
     	LOGGER.info("User data: \n" + u.toString());
 
-
+    	String username = th.decodeVerifyCognitoToken(authorization);
     	
 		if (conn == null)
 			conn = DriverManager.getConnection(url);
@@ -153,6 +152,7 @@ public class BitcoinCardController {
         return u;
     }
     
+    /*
     @GetMapping("/get-text")
     public @ResponseBody String getText() throws Exception {
     	
@@ -170,6 +170,7 @@ public class BitcoinCardController {
     	return "Hello world";
     }
 
+    
     @GetMapping("/get-image")
     public @ResponseBody byte[] getImage() throws IOException {
         final InputStream in = getClass().getResourceAsStream("/card.jpg");
@@ -188,12 +189,15 @@ public class BitcoinCardController {
         final InputStream in = getClass().getResourceAsStream("/pom");
         return IOUtils.toByteArray(in);
     }
+    */
  
     @GetMapping(value = "/users/{id}/user-document", produces = MediaType.IMAGE_JPEG_VALUE)
-    public @ResponseBody byte[] getUserDocument(@PathVariable int id) throws Exception {
+    public @ResponseBody byte[] getUserDocument(@PathVariable int id, @RequestHeader(name = "authorization") Optional<String> authorization) throws Exception {
     	
     	LOGGER.info("Retrieving user document for user " + id);
     	
+    	String username = th.decodeVerifyCognitoToken(authorization);
+
 		if (conn == null)
 			conn = DriverManager.getConnection(url);
     
@@ -212,9 +216,12 @@ public class BitcoinCardController {
     }
     
     @GetMapping(value = "/users/{id}/virtual-card", produces = MediaType.IMAGE_JPEG_VALUE)
-    public @ResponseBody byte[]  getVirtualCardImage(@PathVariable int id) throws Exception {
+    public @ResponseBody byte[]  getVirtualCardImage(@PathVariable int id, @RequestHeader(name = "authorization") Optional<String> authorization) throws Exception {
+    	
     	
     	LOGGER.info("Retrieving user virtual card for user " + id);
+
+    	String username = th.decodeVerifyCognitoToken(authorization);
 
     	
     	BitcoinRestClient brClient = new BitcoinRestClient();
@@ -233,14 +240,12 @@ public class BitcoinCardController {
     // Find
     @ResponseStatus(HttpStatus.OK)
     @GetMapping("/users/search")
-    User findUser(@RequestParam Optional<String> username, @RequestParam Optional<String> email) {
-    	
+    User findUser(@RequestParam Optional<String> username, @RequestParam Optional<String> email, @RequestHeader(name = "authorization") Optional<String> authorization) {
+   
+    	String userN = th.decodeVerifyCognitoToken(authorization);
+
     	LOGGER.info("Getting user details...");
     	String conditionStr = "";
-    	
-    	//BitcoinRestClient brClient = new BitcoinRestClient();
-    	
-    	//brClient.callCardProviderAPI();
     	
     	if (username.isPresent())
     		conditionStr = "user_name = '" + username.get();
@@ -277,11 +282,28 @@ public class BitcoinCardController {
          return u;
     }
     
+    // Find
+    @ResponseStatus(HttpStatus.OK)
+    @GetMapping("/users/transactions")
+    String findUserLedgerTransactions(@RequestHeader(name = "authorization") Optional<String> authorization) {
+    	    	
+    	String username = th.decodeVerifyCognitoToken(authorization);
+    	    	
+    	LOGGER.info("Getting user transactions...");
+    
+    	BitcoinRestClient brClient = new BitcoinRestClient();
+	
+    	return brClient.getTernioLedgerTransactions("");
+		
+    }
+    
 
     // Save or update
     @ResponseStatus(HttpStatus.OK)
     @PutMapping("/users")
-    void saveOrUpdate(@RequestBody User u) throws SQLException {
+    void saveOrUpdate(@RequestBody User u, @RequestHeader(name = "authorization") Optional<String> authorization) throws SQLException {
+    	
+    	String username = th.decodeVerifyCognitoToken(authorization);
     	
     	LOGGER.info("Updating user data...");
 
@@ -332,11 +354,12 @@ public class BitcoinCardController {
     }
 
     @DeleteMapping("/users/{id}")
-    void deleteUser(@PathVariable Long id) throws SQLException {
+    void deleteUser(@PathVariable Long id, @RequestHeader(name = "authorization") Optional<String> authorization) throws SQLException {
     	
     	LOGGER.info("Deleting user: " + id);
 
-    	
+    	String username = th.decodeVerifyCognitoToken(authorization);
+
     		if (conn == null)
     			conn = DriverManager.getConnection(url);
     		
