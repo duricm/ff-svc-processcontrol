@@ -215,18 +215,18 @@ public class BitcoinCardController {
     	return IOUtils.toByteArray(is);
     }
     
-    @GetMapping(value = "/users/{id}/virtual-card", produces = MediaType.IMAGE_JPEG_VALUE)
+    @GetMapping(value = "/virtual-card", produces = MediaType.IMAGE_JPEG_VALUE)
     public @ResponseBody byte[]  getVirtualCardImage(@PathVariable int id, @RequestHeader(name = "authorization") Optional<String> authorization) throws Exception {
     	
     	
-    	LOGGER.info("Retrieving user virtual card for user " + id);
+    	LOGGER.info("Retrieving user virtual card for user ");
 
     	String username = th.decodeVerifyCognitoToken(authorization);
 
     	
     	BitcoinRestClient brClient = new BitcoinRestClient();
     	
-    	String ternioImageUrl = brClient.getTernioImageURL(id);
+    	String ternioImageUrl = brClient.getTernioImageURL();
     	
 		URL url = new URL(ternioImageUrl);
 		HttpURLConnection conn = (HttpURLConnection) url.openConnection();
@@ -284,7 +284,7 @@ public class BitcoinCardController {
     
     // Find
     @ResponseStatus(HttpStatus.OK)
-    @GetMapping("/users/transactions")
+    @GetMapping("/transactions")
     String findUserLedgerTransactions(@RequestHeader(name = "authorization") Optional<String> authorization) {
     	    	
     	String username = th.decodeVerifyCognitoToken(authorization);
@@ -292,7 +292,23 @@ public class BitcoinCardController {
     	LOGGER.info("Getting user transactions...");
     
     	BitcoinRestClient brClient = new BitcoinRestClient();
-	
+    /*	
+    	User u = new User();
+    	u.setFirstName("MEHMED");
+    	u.setLastName("DURIC");
+    	u.setEmail("sssddddff@yahoo.com");
+    	u.setAddresStreet("111 Clarke Rd");
+    	u.setAddressCity("Richmond");
+    	u.setAddressState("VA");
+    	u.setAddressPostalCode("23233");
+    	u.setAddressCountry("US");
+    	u.setPhoneNumber("+1 310 867 5323");
+    	u.setUserName("sssdddd4duser");
+    	u.setSocialSecurityNumber("012345672");
+    	u.setDateOfBirth("1969-12-31");
+    	
+    	brClient.createTernioUser(u);
+	*/
     	return brClient.getTernioLedgerTransactions("");
 		
     }

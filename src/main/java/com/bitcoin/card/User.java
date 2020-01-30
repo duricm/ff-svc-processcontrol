@@ -17,7 +17,7 @@ public class User {
     private Timestamp createdAt;
     private Timestamp updatedAt;
     private String email;
-    private String phoneNumber;
+	private String phoneNumber;
     private String dateOfBirth;
     private String gender;
     private boolean isActive;
@@ -30,6 +30,7 @@ public class User {
     private String defaultCurrencyId;
     private String socialSecurityNumber;
     private String userName;
+    private String cardProviderId;
     
     public String getUserName() {
 		return userName;
@@ -197,5 +198,13 @@ public class User {
 
                 '}';
     }
+    
+    public String getCardProviderId() {
+		return cardProviderId;
+	}
+
+	public void setCardProviderId(String cardProviderId) {
+		this.cardProviderId = cardProviderId;
+	}
 
 }

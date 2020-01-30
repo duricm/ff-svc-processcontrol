@@ -10,7 +10,7 @@ import com.bitcoin.card.error.UnauthorizedException;
 
 public class TokenHandler {
 	
-	private static boolean ENABLE_TOKEN_VALIDATION = false;
+	private static boolean ENABLE_TOKEN_VALIDATION = true;
 	private static String badTokenMessage = "Bad token value";
 	
     private BitcoinRestClient restClient = new BitcoinRestClient();
