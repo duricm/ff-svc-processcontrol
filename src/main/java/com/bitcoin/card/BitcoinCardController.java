@@ -29,7 +29,7 @@ import java.util.Optional;
 
 import org.apache.log4j.Logger;
 
-
+@CrossOrigin()
 @RestController
 public class BitcoinCardController {
 	
