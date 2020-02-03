@@ -29,7 +29,7 @@ import java.util.Optional;
 
 import org.apache.log4j.Logger;
 
-@CrossOrigin(origins = "http://localhost:3000")
+@CrossOrigin(origins = "http://localhost:3000", allowCredentials = "true")
 @RestController
 public class BitcoinCardController {
 	
