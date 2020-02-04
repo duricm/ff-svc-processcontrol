@@ -1,11 +1,5 @@
 # Bitcoin Card API
 
+For all documentation, including endpoints, environment, build and security please check the following link:
 
-## 1. How to start
-```
-$ cd bitcoin-card-api
-$ mvn clean install
-$ mvn spring-boot:run
-
-$ curl -v localhost:8080/user/1
-```
+https://bitcoin-portal.github.io/bitcoincom-svc-cardapi-documentation/
