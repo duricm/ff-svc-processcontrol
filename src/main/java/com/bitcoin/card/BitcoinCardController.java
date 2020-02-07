@@ -1,11 +1,15 @@
 package com.bitcoin.card;
 
 
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 
 
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import org.apache.commons.io.IOUtils;
 
 import com.amazonaws.auth.ClasspathPropertiesFileCredentialsProvider;
@@ -14,7 +18,9 @@ import com.amazonaws.services.cognitoidp.AWSCognitoIdentityProviderClientBuilder
 import com.amazonaws.services.cognitoidp.model.AdminGetUserRequest;
 import com.amazonaws.services.cognitoidp.model.AdminGetUserResult;
 import com.bitcoin.card.error.UserNotFoundException;
+import com.bitcoin.card.error.WrongFileTypeException;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
@@ -29,7 +35,8 @@ import java.util.Optional;
 
 import org.apache.log4j.Logger;
 
-@CrossOrigin(origins = "http://localhost:3000", allowCredentials = "true")
+@CrossOrigin(origins = "http://localhost:3000", allowCredentials = "true", 
+methods = {RequestMethod.DELETE, RequestMethod.GET, RequestMethod.POST, RequestMethod.PUT, RequestMethod.OPTIONS})
 @RestController
 public class BitcoinCardController {
 	
@@ -113,12 +120,12 @@ public class BitcoinCardController {
 	   }
 	
     // Save
-    @PostMapping("/users")
+    @PostMapping(value = "/users", consumes = "*/*")
     @ResponseStatus(HttpStatus.CREATED)
     User newUser(@RequestBody User u, @RequestHeader(name = "authorization") Optional<String> authorization) throws SQLException {
     	String sql = "insert into users (first_name, last_name, email, phone_number, date_of_birth, gender, is_active, promotional_consent" +
     	", address_street, address_city, address_postal_code, address_state, address_country, default_currency_id, social_security_number" +
-    			", created_at, updated_at) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, now(), now())";
+    			", user_name, created_at, updated_at) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, now(), now())";
 
     	LOGGER.info("Adding new user to database...");
     	LOGGER.info("User data: \n" + u.toString());
@@ -183,16 +190,58 @@ public class BitcoinCardController {
         final InputStream in = getClass().getResourceAsStream("/card.jpg");
         return IOUtils.toByteArray(in);
     }
-
+*/
+    
     @GetMapping(value = "/get-file", produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
     public @ResponseBody byte[] getFile() throws IOException {
-        final InputStream in = getClass().getResourceAsStream("/pom");
+    	System.out.println("MEHMED getting file...");
+    	
+    	File f = new File("/db_backup.sh");
+        System.out.println("File path: " + f.getAbsolutePath());
+    	
+        final InputStream in = getClass().getResourceAsStream("C:\\projects\\bitcoincom-svc-cardapi\\db_backup.sh");
+        
+        System.out.println("Input stream is " + in);
         return IOUtils.toByteArray(in);
     }
-    */
+    
+    @PostMapping("/users/upload-document")
+    public String uploadFile(@RequestParam("file") MultipartFile file, 
+			 @RequestParam("id") int id, 
+			 @RequestParam("documenttype") String documentType    						 
+    		) throws SQLException, IOException {
+    	
+    	LOGGER.info("Uploading file " + file.getOriginalFilename() + " for user " + id + ".");
+    	
+    	String fileExtension = file.getOriginalFilename().substring(file.getOriginalFilename().indexOf('.') + 1);
+    	
+
+    	if (! fileExtension.equalsIgnoreCase("PDF") && ! fileExtension.equalsIgnoreCase("JPG") && ! fileExtension.equalsIgnoreCase("PNG"))
+    	{
+    		System.out.println("Throwing exception!!!");
+    	
+    		throw new WrongFileTypeException(fileExtension);
+    	}
+    	
+		if (conn == null)
+			conn = DriverManager.getConnection(url);
+    	
+        final InputStream in = file.getInputStream();
+        
+    	PreparedStatement ps = conn.prepareStatement("INSERT INTO user_documents (user_id, document_name, document_type, document) VALUES (?, ?, ?, ?)");
+    	ps.setInt(1, id);
+    	ps.setString(2, file.getOriginalFilename());
+    	ps.setString(3, documentType);
+    	ps.setBinaryStream(4, in);
+    	ps.execute();
+    	ps.close();
+    	LOGGER.info("Uploaded.");
+    
+    	return file.getName();
+    }
  
-    @GetMapping(value = "/users/{id}/user-document", produces = MediaType.IMAGE_JPEG_VALUE)
-    public @ResponseBody byte[] getUserDocument(@PathVariable int id, @RequestHeader(name = "authorization") Optional<String> authorization) throws Exception {
+    @GetMapping(value = "/users/{id}/user-document")
+    public @ResponseBody ResponseEntity<byte[]> getUserDocument(@PathVariable int id, @RequestHeader(name = "authorization") Optional<String> authorization) throws Exception {
     	
     	LOGGER.info("Retrieving user document for user " + id);
     	
@@ -201,18 +250,33 @@ public class BitcoinCardController {
 		if (conn == null)
 			conn = DriverManager.getConnection(url);
     
-    	PreparedStatement ps = conn.prepareStatement("select document from user_documents where user_id = ?");
+    	PreparedStatement ps = conn.prepareStatement("select document_name, document from user_documents where user_id = ?");
     	ps.setInt(1, id);
     	ResultSet rs = ps.executeQuery();
 
     	rs.next();
-    	InputStream is = rs.getBinaryStream(1);
-
-
-    	LOGGER.info("Retrieved.");
-
     	
-    	return IOUtils.toByteArray(is);
+    	String file = rs.getString(1);
+    	
+    	String fileExtension = file.substring(file.indexOf('.') + 1);
+
+
+    	InputStream is = rs.getBinaryStream(2);
+
+        HttpHeaders responseHeaders = new HttpHeaders();
+        
+        if (fileExtension.equalsIgnoreCase("PDF"))
+            responseHeaders.set("Content-Type", "application/pdf");
+        else
+        	responseHeaders.set("Content-Type", "image/jpeg");
+        
+    	LOGGER.info("Retrieved.");
+    	
+        return ResponseEntity.ok()
+        	      .headers(responseHeaders)
+        	      .body(IOUtils.toByteArray(is));
+    
+    	//return IOUtils.toByteArray(is);
     }
     
     @GetMapping(value = "/virtual-card", produces = MediaType.IMAGE_JPEG_VALUE)

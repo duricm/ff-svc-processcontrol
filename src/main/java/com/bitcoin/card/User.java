@@ -3,7 +3,6 @@ package com.bitcoin.card;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
-import java.math.BigDecimal;
 import java.sql.Timestamp;
 
 @Entity
@@ -190,14 +189,6 @@ public class User {
         this.id = id;
     }
 
-
-
-    @Override    public String toString() {
-        return "User{" +
-                "id=" + id +
-
-                '}';
-    }
     
     public String getCardProviderId() {
 		return cardProviderId;

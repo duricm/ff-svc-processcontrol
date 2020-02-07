@@ -47,6 +47,16 @@ public class CustomGlobalExceptionHandler extends ResponseEntityExceptionHandler
         response.sendError(HttpStatus.UNAUTHORIZED.value());
        
     }
+	
+    // Let Spring handle the exception, we just override the status code
+	@ExceptionHandler(WrongFileTypeException.class)
+    public void springHandleWrongFileType(HttpServletResponse response) throws IOException {
+		
+		LOGGER.error("Error!!! Wrong file type. ");
+		
+        response.sendError(HttpStatus.BAD_REQUEST.value());
+       
+    }
     
 
 
