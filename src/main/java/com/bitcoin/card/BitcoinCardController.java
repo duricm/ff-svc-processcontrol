@@ -125,7 +125,7 @@ public class BitcoinCardController {
     User newUser(@RequestBody User u, @RequestHeader(name = "authorization") Optional<String> authorization) throws SQLException {
     	String sql = "insert into users (first_name, last_name, email, phone_number, date_of_birth, gender, is_active, promotional_consent" +
     	", address_street, address_city, address_postal_code, address_state, address_country, default_currency_id, social_security_number" +
-    			", user_name, created_at, updated_at) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, now(), now())";
+    			", user_name, address_street_2, created_at, updated_at) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, now(), now())";
 
     	LOGGER.info("Adding new user to database...");
     	LOGGER.info("User data: \n" + u.toString());
@@ -152,6 +152,7 @@ public class BitcoinCardController {
     	stmt.setString(14, u.getDefaultCurrencyId());
     	stmt.setString(15, u.getSocialSecurityNumber());
     	stmt.setString(16, u.getUserName());
+    	stmt.setString(17, u.getAddresStreet2());
     	LOGGER.info("Executing insert statement...");
     	stmt.execute();
     	System.out.println("Executed");
@@ -231,7 +232,7 @@ public class BitcoinCardController {
     	PreparedStatement ps = conn.prepareStatement("INSERT INTO user_documents (user_id, document_name, document_type, document) VALUES (?, ?, ?, ?)");
     	ps.setInt(1, id);
     	ps.setString(2, file.getOriginalFilename());
-    	ps.setString(3, documentType);
+    	ps.setString(3, documentType.toUpperCase());
     	ps.setBinaryStream(4, in);
     	ps.execute();
     	ps.close();
@@ -240,8 +241,8 @@ public class BitcoinCardController {
     	return file.getName();
     }
  
-    @GetMapping(value = "/users/{id}/user-document")
-    public @ResponseBody ResponseEntity<byte[]> getUserDocument(@PathVariable int id, @RequestHeader(name = "authorization") Optional<String> authorization) throws Exception {
+    @GetMapping(value = "/users/{id}/user-document/{documentType}")
+    public @ResponseBody ResponseEntity<byte[]> getUserDocument(@PathVariable int id, @PathVariable String documentType, @RequestHeader(name = "authorization") Optional<String> authorization) throws Exception {
     	
     	LOGGER.info("Retrieving user document for user " + id);
     	
@@ -250,8 +251,9 @@ public class BitcoinCardController {
 		if (conn == null)
 			conn = DriverManager.getConnection(url);
     
-    	PreparedStatement ps = conn.prepareStatement("select document_name, document from user_documents where user_id = ?");
+    	PreparedStatement ps = conn.prepareStatement("select document_name, document from user_documents where user_id = ? and document_type = ?");
     	ps.setInt(1, id);
+    	ps.setString(2, documentType.toUpperCase());
     	ResultSet rs = ps.executeQuery();
 
     	rs.next();
@@ -421,6 +423,8 @@ public class BitcoinCardController {
 			sql += "default_currency_id = '" + u.getDefaultCurrencyId() + "', ";
 		if (u.getSocialSecurityNumber() != null)
 			sql += "social_security_number = '" + u.getSocialSecurityNumber() + "', ";
+		if (u.getAddresStreet2() != null)
+			sql += "address_street_2 = '" + u.getAddresStreet2() + "', ";
 		
 		sql += "updated_at= now() where user_id = " + u.getId();
 		
@@ -472,6 +476,7 @@ public class BitcoinCardController {
 	    		u.setActive(r.getBoolean("is_active"));
 	    		u.setPromotioanlConsent(r.getBoolean("promotional_consent"));
 	    		u.setAddresStreet(r.getString("address_street"));
+	    		u.setAddresStreet2(r.getString("address_street_2"));
 	    		u.setAddressCity(r.getString("address_city"));
 	    		u.setAddressPostalCode(r.getString("address_postal_code"));
 	    		u.setAddressState(r.getString("address_state"));

@@ -30,8 +30,17 @@ public class User {
     private String socialSecurityNumber;
     private String userName;
     private String cardProviderId;
+    private String addresStreet2;
     
-    public String getUserName() {
+    public String getAddresStreet2() {
+		return addresStreet2;
+	}
+
+	public void setAddresStreet2(String addressStreet2) {
+		this.addresStreet2 = addressStreet2;
+	}
+
+	public String getUserName() {
 		return userName;
 	}
 
