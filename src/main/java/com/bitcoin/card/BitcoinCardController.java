@@ -319,7 +319,7 @@ public class BitcoinCardController {
     		if (email.isPresent())
     			conditionStr = "email = '" + email.get();
     		else
-	    		throw new UserNotFoundException("Invalid parameter");
+	    		throw new UserNotFoundException("Invalid parameter, email or username has to be provided.");
 
     	LOGGER.info("User query parameter : " + conditionStr);
     	
@@ -390,6 +390,9 @@ public class BitcoinCardController {
     	LOGGER.info("Updating user data...");
 
     	LOGGER.info("User data: \n" + u.toString());
+    	
+    	if (u.getId() == null)
+    		throw new UserNotFoundException("Missing user id");
 
     	
     	String sql = "update users set ";
@@ -440,7 +443,12 @@ public class BitcoinCardController {
     @DeleteMapping("/users/{id}")
     void deleteUser(@PathVariable Long id, @RequestHeader(name = "authorization") Optional<String> authorization) throws SQLException {
     	
+    	
+    	
     	LOGGER.info("Deleting user: " + id);
+    	
+		if (id == null)
+			throw new UserNotFoundException(id.toString());
 
     	String username = th.decodeVerifyCognitoToken(authorization);
 
@@ -448,13 +456,15 @@ public class BitcoinCardController {
     			conn = DriverManager.getConnection(url);
     		
     		Statement s = conn.createStatement();
-    		boolean result = s.execute("delete from users where user_id = " + id);
-
-    		if (! result)
-    			throw new UserNotFoundException(id.toString());
     		
+    		s.execute("delete from user_documents where user_id = " + id);
+    		
+    		s.execute("delete from users where user_id = " + id);
+    		
+    		if (s.getUpdateCount() == 0)
+    			throw new UserNotFoundException("User not found in our system.");
+	
         	LOGGER.info("Deleted.");
-
         
     }
     
