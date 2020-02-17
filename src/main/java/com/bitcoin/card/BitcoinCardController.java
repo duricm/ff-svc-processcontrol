@@ -17,6 +17,7 @@ import com.amazonaws.services.cognitoidp.AWSCognitoIdentityProvider;
 import com.amazonaws.services.cognitoidp.AWSCognitoIdentityProviderClientBuilder;
 import com.amazonaws.services.cognitoidp.model.AdminGetUserRequest;
 import com.amazonaws.services.cognitoidp.model.AdminGetUserResult;
+import com.bitcoin.card.error.UnauthorizedException;
 import com.bitcoin.card.error.UserNotFoundException;
 import com.bitcoin.card.error.WrongFileTypeException;
 
@@ -43,6 +44,8 @@ public class BitcoinCardController {
 	private final Logger LOGGER = Logger.getLogger(this.getClass());
 	
 	TokenHandler th = new TokenHandler();
+	
+	CognitoHelper helper = new CognitoHelper();
 
 	//private static String url = "jdbc:postgresql://3.136.241.73:5432/bitcoin-card?user=postgres&password=bch_admin&ssl=true&sslmode=verify-ca&sslrootcert=./.postgres/root.crt";
 
@@ -119,6 +122,34 @@ public class BitcoinCardController {
 	 
 	   }
 	
+    // Login user
+    @PostMapping(value = "/login", consumes = "*/*")
+    @ResponseStatus(HttpStatus.CREATED)
+    String loginUser(@RequestParam("username") String username, @RequestParam("password") String password) 
+    {
+    	String accessToken;
+    	
+    	accessToken = helper.ValidateUser(username, password);
+    		
+    	return accessToken;
+    }
+    
+    // Verify user's access code so user can be confirmed in Cognito
+    @PostMapping(value = "/verify", consumes = "*/*")
+    @ResponseStatus(HttpStatus.OK)
+    boolean verifyAccessCode(@RequestParam("username") String username, @RequestParam("code") String code) 
+    {
+    	boolean result;
+    	
+    	result = helper.VerifyAccessCode(username, code);
+    	
+    	if (! result)
+    		throw new UnauthorizedException("Failed to verify access code: " + code);
+    	
+    		
+    	return result;
+    }
+	
     // Save
     @PostMapping(value = "/users", consumes = "*/*")
     @ResponseStatus(HttpStatus.CREATED)
@@ -153,10 +184,24 @@ public class BitcoinCardController {
     	stmt.setString(15, u.getSocialSecurityNumber());
     	stmt.setString(16, u.getUserName());
     	stmt.setString(17, u.getAddresStreet2());
+    	
     	LOGGER.info("Executing insert statement...");
     	stmt.execute();
-    	System.out.println("Executed");
+    	LOGGER.info("Inserted new user in database.");
+    	
+    	// Create new user in Cognito
+    	LOGGER.info("Creating Cognito user...");
+    	boolean cognitoResult = helper.SignUpUser(u.getUserName(), u.getPassword(), u.getEmail(), u.getPhoneNumber());
 		
+    	if (! cognitoResult)
+    	{
+    		LOGGER.info("Failed to create Cognito user + " + u.getUserName());
+        	stmt = conn.prepareStatement("delete from users where user_name = ?");  
+        	stmt.setString(1, u.getUserName());
+		    stmt.execute();
+		    throw new SQLException("Failed to create Cognito user + " + u.getUserName());
+    	}
+
         return u;
     }
     

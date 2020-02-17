@@ -29,7 +29,17 @@ public class User {
     private String defaultCurrencyId;
     private String socialSecurityNumber;
     private String userName;
-    private String cardProviderId;
+    private String password;
+    
+    public String getPassword() {
+		return password;
+	}
+
+	public void setPassword(String password) {
+		this.password = password;
+	}
+
+	private String cardProviderId;
     private String addresStreet2;
     
     public String getAddresStreet2() {
