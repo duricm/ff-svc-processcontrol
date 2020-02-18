@@ -124,27 +124,30 @@ public class BitcoinCardController {
 	
     // Login user
     @PostMapping(value = "/login", consumes = "*/*")
-    @ResponseStatus(HttpStatus.CREATED)
-    String loginUser(@RequestParam("username") String username, @RequestParam("password") String password) 
+    @ResponseStatus(HttpStatus.OK)
+    AccessToken loginUser(@RequestBody Login l) 
     {
+    	AccessToken a = new AccessToken();
     	String accessToken;
     	
-    	accessToken = helper.ValidateUser(username, password);
+    	accessToken = helper.ValidateUser(l.getUsername(), l.getPassword());
+    	
+    	a.setAccess_token(accessToken);
     		
-    	return accessToken;
+    	return a;
     }
     
     // Verify user's access code so user can be confirmed in Cognito
     @PostMapping(value = "/verify", consumes = "*/*")
     @ResponseStatus(HttpStatus.OK)
-    boolean verifyAccessCode(@RequestParam("username") String username, @RequestParam("code") String code) 
+    boolean verifyAccessCode(@RequestBody VerifyAccessCode v) 
     {
     	boolean result;
     	
-    	result = helper.VerifyAccessCode(username, code);
+    	result = helper.VerifyAccessCode(v.getUsername(), v.getCode());
     	
     	if (! result)
-    		throw new UnauthorizedException("Failed to verify access code: " + code);
+    		throw new UnauthorizedException("Failed to verify access code: " + v.getCode());
     	
     		
     	return result;
@@ -153,7 +156,7 @@ public class BitcoinCardController {
     // Save
     @PostMapping(value = "/users", consumes = "*/*")
     @ResponseStatus(HttpStatus.CREATED)
-    User newUser(@RequestBody User u, @RequestHeader(name = "authorization") Optional<String> authorization) throws SQLException {
+    void newUser(@RequestBody User u, @RequestHeader(name = "authorization") Optional<String> authorization) throws SQLException {
     	String sql = "insert into users (first_name, last_name, email, phone_number, date_of_birth, gender, is_active, promotional_consent" +
     	", address_street, address_city, address_postal_code, address_state, address_country, default_currency_id, social_security_number" +
     			", user_name, address_street_2, created_at, updated_at) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, now(), now())";
@@ -202,7 +205,6 @@ public class BitcoinCardController {
 		    throw new SQLException("Failed to create Cognito user + " + u.getUsername());
     	}
 
-        return u;
     }
     
     /*

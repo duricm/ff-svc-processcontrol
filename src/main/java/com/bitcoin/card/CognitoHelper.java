@@ -173,11 +173,6 @@ class CognitoHelper {
      */
     String ValidateUser(String username, String password) {
     	
-    	System.out.println("username " + username);
-    	System.out.println("password " + password);
-    	System.out.println("region " + REGION);
-    	System.out.println("client id " + CLIENTAPP_ID);
-    	System.out.println("pool id " + POOL_ID);
         CognitoAuthenticationHelper helper = new CognitoAuthenticationHelper(POOL_ID, CLIENTAPP_ID, "", REGION);
         return helper.PerformSRPAuthentication(username, password);
     }
