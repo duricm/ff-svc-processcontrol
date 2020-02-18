@@ -49,7 +49,7 @@ public class BitcoinRestClient {
 			postObj.put("zip_code", u.getAddressPostalCode());
 			postObj.put("country", u.getAddressCountry());
 			postObj.put("phone", u.getPhoneNumber());
-			postObj.put("username", u.getUserName());
+			postObj.put("username", u.getUsername());
 			
 			JSONObject dataObject = new JSONObject();
 			dataObject.putOnce("data", postObj);
@@ -211,7 +211,7 @@ public class BitcoinRestClient {
 			postObj.put("zip_code", u.getAddressPostalCode());
 			postObj.put("country", u.getAddressCountry());
 			postObj.put("phone", u.getPhoneNumber());
-			postObj.put("username", u.getUserName());
+			postObj.put("username", u.getUsername());
 			postObj.put("id1", u.getSocialSecurityNumber());
 			postObj.put("id1_type", "ssn");
 			postObj.put("id2", "11111111");

@@ -86,7 +86,7 @@ public class BitcoinCardController {
 	       AdminGetUserResult userResult = cognitoClient.adminGetUser(userRequest);
 	 
 	       User userResponse = new User();
-	       userResponse.setUserName(userResult.getUsername());
+	       userResponse.setUsername(userResult.getUsername());
 	       
 	       System.out.println("MFA Settings " + userResult.toString());
 	       //userResponse.setUserStatus(userResult.getUserStatus());
@@ -182,7 +182,7 @@ public class BitcoinCardController {
     	stmt.setString(13, u.getAddressCountry());
     	stmt.setString(14, u.getDefaultCurrencyId());
     	stmt.setString(15, u.getSocialSecurityNumber());
-    	stmt.setString(16, u.getUserName());
+    	stmt.setString(16, u.getUsername());
     	stmt.setString(17, u.getAddresStreet2());
     	
     	LOGGER.info("Executing insert statement...");
@@ -191,15 +191,15 @@ public class BitcoinCardController {
     	
     	// Create new user in Cognito
     	LOGGER.info("Creating Cognito user...");
-    	boolean cognitoResult = helper.SignUpUser(u.getUserName(), u.getPassword(), u.getEmail(), u.getPhoneNumber());
+    	boolean cognitoResult = helper.SignUpUser(u.getUsername(), u.getPassword(), u.getEmail(), u.getPhoneNumber());
 		
     	if (! cognitoResult)
     	{
-    		LOGGER.info("Failed to create Cognito user + " + u.getUserName());
+    		LOGGER.info("Failed to create Cognito user + " + u.getUsername());
         	stmt = conn.prepareStatement("delete from users where user_name = ?");  
-        	stmt.setString(1, u.getUserName());
+        	stmt.setString(1, u.getUsername());
 		    stmt.execute();
-		    throw new SQLException("Failed to create Cognito user + " + u.getUserName());
+		    throw new SQLException("Failed to create Cognito user + " + u.getUsername());
     	}
 
         return u;
@@ -488,8 +488,6 @@ public class BitcoinCardController {
     @DeleteMapping("/users/{id}")
     void deleteUser(@PathVariable Long id, @RequestHeader(name = "authorization") Optional<String> authorization) throws SQLException {
     	
-    	
-    	
     	LOGGER.info("Deleting user: " + id);
     	
 		if (id == null)
@@ -538,7 +536,7 @@ public class BitcoinCardController {
 	    		u.setAddressCountry(r.getString("address_country"));
 	    		u.setDefaultCurrencyId(r.getString("default_currency_id"));
 	    		u.setSocialSecurityNumber(r.getString("social_security_number"));
-	    		u.setUserName(r.getString("user_name"));
+	    		u.setUsername(r.getString("user_name"));
 	    		u.setCreatedAt(r.getTimestamp("created_at"));
 	    		u.setUpdatedAt(r.getTimestamp("updated_at"));
 	    	}
