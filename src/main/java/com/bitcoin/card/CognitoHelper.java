@@ -109,11 +109,11 @@ class CognitoHelper {
         signUpRequest.setPassword(password);
         List<AttributeType> list = new ArrayList<>();
 
-        AttributeType attributeType = new AttributeType();
+      /*  AttributeType attributeType = new AttributeType();
         attributeType.setName("phone_number");
         attributeType.setValue(phonenumber);
         list.add(attributeType);
-
+*/
         AttributeType attributeType1 = new AttributeType();
         attributeType1.setName("email");
         attributeType1.setValue(email);
