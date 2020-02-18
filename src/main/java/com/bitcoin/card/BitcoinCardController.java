@@ -161,7 +161,7 @@ public class BitcoinCardController {
     	LOGGER.info("Adding new user to database...");
     	LOGGER.info("User data: \n" + u.toString());
 
-    	String username = th.decodeVerifyCognitoToken(authorization);
+    	//String username = th.decodeVerifyCognitoToken(authorization);
     	
 		if (conn == null)
 			conn = DriverManager.getConnection(url);
