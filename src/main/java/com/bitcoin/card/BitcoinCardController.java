@@ -17,6 +17,14 @@ import com.amazonaws.services.cognitoidp.AWSCognitoIdentityProvider;
 import com.amazonaws.services.cognitoidp.AWSCognitoIdentityProviderClientBuilder;
 import com.amazonaws.services.cognitoidp.model.AdminGetUserRequest;
 import com.amazonaws.services.cognitoidp.model.AdminGetUserResult;
+import com.bitcoin.card.entity.AccessToken;
+import com.bitcoin.card.entity.Login;
+import com.bitcoin.card.entity.ResponseMessage;
+import com.bitcoin.card.entity.UpdatePassword;
+import com.bitcoin.card.entity.User;
+import com.bitcoin.card.entity.UserDocument;
+import com.bitcoin.card.entity.Username;
+import com.bitcoin.card.entity.VerifyAccessCode;
 import com.bitcoin.card.error.UnauthorizedException;
 import com.bitcoin.card.error.UserNotFoundException;
 import com.bitcoin.card.error.WrongFileTypeException;
@@ -32,6 +40,8 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
 import org.apache.log4j.Logger;
@@ -122,6 +132,36 @@ public class BitcoinCardController {
 	 
 	   }
 	
+    // Reset password will send reset code to user's email. After this update password should be
+	// called with new password
+    @PostMapping(value = "/reset-password/me", consumes = "*/*")
+    @ResponseStatus(HttpStatus.OK)
+    ResponseMessage resetPassword(@RequestHeader(name = "authorization") Optional<String> authorization) 
+    {
+    	
+    	String username = th.decodeVerifyCognitoToken(authorization);
+    	
+    	ResponseMessage response = new ResponseMessage();
+    	
+    	response.setMessage(helper.resetPassword(username));
+    		
+    	return response;
+    }
+    
+    @PostMapping(value = "/update-password/me", consumes = "*/*")
+    @ResponseStatus(HttpStatus.OK)
+    ResponseMessage updatePassword(@RequestBody UpdatePassword u, @RequestHeader(name = "authorization") Optional<String> authorization) 
+    {
+    	System.out.println("Updating password...");
+    	String username = th.decodeVerifyCognitoToken(authorization);
+
+    	ResponseMessage response = new ResponseMessage();
+    	
+    	response.setMessage(helper.updatePassword(username, u.getNewPassword(), u.getCode()));
+    		
+    	return response;
+    }
+    
     // Login user
     @PostMapping(value = "/login", consumes = "*/*")
     @ResponseStatus(HttpStatus.OK)
@@ -130,8 +170,8 @@ public class BitcoinCardController {
     	AccessToken a = new AccessToken();
     	String accessToken;
     	
-    	accessToken = helper.ValidateUser(l.getUsername(), l.getPassword());
-    	
+    	accessToken = helper.validateUser(l.getUsername(), l.getPassword());
+    	    	
     	a.setAccess_token(accessToken);
     		
     	return a;
@@ -144,7 +184,7 @@ public class BitcoinCardController {
     {
     	boolean result;
     	
-    	result = helper.VerifyAccessCode(v.getUsername(), v.getCode());
+    	result = helper.verifyAccessCode(v.getUsername(), v.getCode());
     	
     	if (! result)
     		throw new UnauthorizedException("Failed to verify access code: " + v.getCode());
@@ -194,7 +234,7 @@ public class BitcoinCardController {
     	
     	// Create new user in Cognito
     	LOGGER.info("Creating Cognito user...");
-    	boolean cognitoResult = helper.SignUpUser(u.getUsername(), u.getPassword(), u.getEmail(), u.getPhoneNumber());
+    	boolean cognitoResult = helper.signUpUser(u.getUsername(), u.getPassword(), u.getEmail(), u.getPhoneNumber());
 		
     	if (! cognitoResult)
     	{
@@ -253,20 +293,24 @@ public class BitcoinCardController {
         return IOUtils.toByteArray(in);
     }
     
-    @PostMapping("/users/upload-document")
-    public String uploadFile(@RequestParam("file") MultipartFile file, 
-			 @RequestParam("id") int id, 
-			 @RequestParam("documenttype") String documentType    						 
+    @PostMapping("/files")
+    public void uploadUserDocument(@RequestParam("file") MultipartFile file, 
+			 @RequestParam("type") String documentType,
+			 @RequestHeader(name = "authorization") Optional<String> authorization
     		) throws SQLException, IOException {
     	
-    	LOGGER.info("Uploading file " + file.getOriginalFilename() + " for user " + id + ".");
+    	String username = th.decodeVerifyCognitoToken(authorization);
+    	String id = "";
+    	LOGGER.info("Uploading file " + file.getOriginalFilename() + " for user " + username + ".");
+    	
+		id = getUserId(username);
     	
     	String fileExtension = file.getOriginalFilename().substring(file.getOriginalFilename().indexOf('.') + 1);
     	
 
     	if (! fileExtension.equalsIgnoreCase("PDF") && ! fileExtension.equalsIgnoreCase("JPG") && ! fileExtension.equalsIgnoreCase("PNG"))
     	{
-    		System.out.println("Throwing exception!!!");
+    		LOGGER.info("Exception! Wrong file type " + fileExtension);
     	
     		throw new WrongFileTypeException(fileExtension);
     	}
@@ -276,8 +320,8 @@ public class BitcoinCardController {
     	
         final InputStream in = file.getInputStream();
         
-    	PreparedStatement ps = conn.prepareStatement("INSERT INTO user_documents (user_id, document_name, document_type, document) VALUES (?, ?, ?, ?)");
-    	ps.setInt(1, id);
+    	PreparedStatement ps = conn.prepareStatement("INSERT INTO user_documents (user_id, document_name, document_type, document, document_id) VALUES (?, ?, ?, ?, nextval('document_id_seq'))");
+    	ps.setInt(1, Integer.parseInt(id));
     	ps.setString(2, file.getOriginalFilename());
     	ps.setString(3, documentType.toUpperCase());
     	ps.setBinaryStream(4, in);
@@ -285,25 +329,83 @@ public class BitcoinCardController {
     	ps.close();
     	LOGGER.info("Uploaded.");
     
-    	return file.getName();
     }
- 
-    @GetMapping(value = "/users/{id}/user-document/{documentType}")
-    public @ResponseBody ResponseEntity<byte[]> getUserDocument(@PathVariable int id, @PathVariable String documentType, @RequestHeader(name = "authorization") Optional<String> authorization) throws Exception {
+    
+    private String getUserId(String username) throws SQLException
+    {
     	
-    	LOGGER.info("Retrieving user document for user " + id);
+		if (conn == null)
+			conn = DriverManager.getConnection(url);
+    	
+    	String id = "";
+    	Statement s = conn.createStatement();
+
+    	ResultSet r = s.executeQuery("select user_id from users where user_name = '" + username + "'");
+    	if (r.next() == false)
+    		throw new UserNotFoundException("User " + username + " not found in our system.");
+    	else
+    		id = r.getString("user_id");
+    
+    	return id;
+    }
+    
+    
+    @GetMapping(value = "/files/me")
+    public List<UserDocument> getAllUserDocuments(@RequestHeader(name = "authorization") Optional<String> authorization) throws Exception {
+    	
     	
     	String username = th.decodeVerifyCognitoToken(authorization);
+    	String id = "";
+    	List<UserDocument> docList = new ArrayList<UserDocument>();
+    	UserDocument tempDoc = null;
 
+    	LOGGER.info("Retrieving user document for user " + username);
+    	
 		if (conn == null)
 			conn = DriverManager.getConnection(url);
     
-    	PreparedStatement ps = conn.prepareStatement("select document_name, document from user_documents where user_id = ? and document_type = ?");
-    	ps.setInt(1, id);
-    	ps.setString(2, documentType.toUpperCase());
+		id = getUserId(username);
+    	
+    	PreparedStatement ps = conn.prepareStatement("select document_id, document_name, document_type from user_documents where user_id = ? ");
+    	ps.setInt(1, Integer.parseInt(id));
+
     	ResultSet rs = ps.executeQuery();
 
-    	rs.next();
+    	while (rs.next())
+    	{
+    		tempDoc = new UserDocument();
+    		tempDoc.setFileId(rs.getString(1));
+    		tempDoc.setName(rs.getString(2));
+    		tempDoc.setType(rs.getString(3));
+    		
+    		docList.add(tempDoc);
+    		
+    	}
+    	
+        return docList;
+    
+    }
+ 
+    @GetMapping(value = "/files")
+    public @ResponseBody ResponseEntity<byte[]> getUserDocument(@RequestParam String fileId, @RequestHeader(name = "authorization") Optional<String> authorization) throws Exception {
+    	
+    	LOGGER.info("Retrieving document id " + fileId);
+    	
+    	String username = th.decodeVerifyCognitoToken(authorization);
+    	String id = getUserId(username);
+    	
+		if (conn == null)
+			conn = DriverManager.getConnection(url);
+    
+    	PreparedStatement ps = conn.prepareStatement("select document_name, document from user_documents where user_id = ? and document_id = ?");
+    	ps.setInt(1, Integer.parseInt(id));
+    	ps.setInt(2, Integer.parseInt(fileId));
+
+    	ResultSet rs = ps.executeQuery();
+
+    	if (rs.next() == false)
+    		throw new UserNotFoundException("File not found!");
+
     	
     	String file = rs.getString(1);
     	
@@ -325,7 +427,6 @@ public class BitcoinCardController {
         	      .headers(responseHeaders)
         	      .body(IOUtils.toByteArray(is));
     
-    	//return IOUtils.toByteArray(is);
     }
     
     @GetMapping(value = "/virtual-card", produces = MediaType.IMAGE_JPEG_VALUE)
@@ -375,9 +476,7 @@ public class BitcoinCardController {
     	try {
     		if (conn == null)
     			conn = DriverManager.getConnection(url);
-    		
-    		System.out.println("select * from users where " + conditionStr);
-    		
+    		    		
     		Statement s = conn.createStatement();
     		ResultSet r = s.executeQuery("select * from users where " + conditionStr + "'");
     		
@@ -429,18 +528,14 @@ public class BitcoinCardController {
 
     // Save or update
     @ResponseStatus(HttpStatus.OK)
-    @PutMapping("/users")
-    void saveOrUpdate(@RequestBody User u, @RequestHeader(name = "authorization") Optional<String> authorization) throws SQLException {
+    @PutMapping("/users/me")
+    void updateUser(@RequestBody User u, @RequestHeader(name = "authorization") Optional<String> authorization) throws SQLException {
     	
     	String username = th.decodeVerifyCognitoToken(authorization);
     	
-    	LOGGER.info("Updating user data...");
+    	LOGGER.info("Updating user data for user: " + username);
 
     	LOGGER.info("User data: \n" + u.toString());
-    	
-    	if (u.getId() == null)
-    		throw new UserNotFoundException("Missing user id");
-
     	
     	String sql = "update users set ";
  
@@ -476,7 +571,7 @@ public class BitcoinCardController {
 		if (u.getAddresStreet2() != null)
 			sql += "address_street_2 = '" + u.getAddresStreet2() + "', ";
 		
-		sql += "updated_at= now() where user_id = " + u.getId();
+		sql += "updated_at= now() where user_name = '" + username + "'";
 		
 		Statement s = conn.createStatement();
 		
@@ -487,29 +582,26 @@ public class BitcoinCardController {
 
     }
 
-    @DeleteMapping("/users/{id}")
-    void deleteUser(@PathVariable Long id, @RequestHeader(name = "authorization") Optional<String> authorization) throws SQLException {
-    	
-    	LOGGER.info("Deleting user: " + id);
-    	
-		if (id == null)
-			throw new UserNotFoundException(id.toString());
+    @DeleteMapping("/users/me")
+    void deleteUser(@RequestHeader(name = "authorization") Optional<String> authorization) throws SQLException {
 
     	String username = th.decodeVerifyCognitoToken(authorization);
+    	String id = "";
+    	
+    	LOGGER.info("Deleting user: " + username);
 
     		if (conn == null)
     			conn = DriverManager.getConnection(url);
+    		
+    		id = getUserId(username);
     		
     		Statement s = conn.createStatement();
     		
     		s.execute("delete from user_documents where user_id = " + id);
     		
     		s.execute("delete from users where user_id = " + id);
-    		
-    		if (s.getUpdateCount() == 0)
-    			throw new UserNotFoundException("User not found in our system.");
-	
-        	LOGGER.info("Deleted.");
+    			
+        	LOGGER.info("Deleted user: " + username);
         
     }
     

@@ -30,6 +30,7 @@ public class TokenHandler {
     String decodeVerifyCognitoToken(Optional<String> authorization) 
 	{
     	String tempTokenStr = "";
+    	String username = "";
     	
     	String[] authorizationParts = null;
     	if (! ENABLE_TOKEN_VALIDATION)
@@ -87,6 +88,8 @@ public class TokenHandler {
 	    
 	    if (currentObject.getLong("exp") < (System.currentTimeMillis() / 1000))
 	    		throw new UnauthorizedException("Token expired!");
+	    
+	    username = currentObject.getString("username");
 	/*    
 	    System.out.println("Token is: " + hmacSha256(header + "." + payload, signature));
 	    System.out.println("Original Token is: " + token);
@@ -105,7 +108,7 @@ public class TokenHandler {
 			e.printStackTrace();
 		}
         
-        return token;
+        return username;
 	}
     
     private String hmacSha256(String data, String secret) {

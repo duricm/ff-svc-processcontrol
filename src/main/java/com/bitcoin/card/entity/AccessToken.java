@@ -1,4 +1,4 @@
-package com.bitcoin.card;
+package com.bitcoin.card.entity;
 
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;

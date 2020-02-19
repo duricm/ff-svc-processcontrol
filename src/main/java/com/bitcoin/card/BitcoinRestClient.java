@@ -14,6 +14,7 @@ import org.apache.log4j.Logger;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import com.bitcoin.card.entity.User;
 import com.bitcoin.card.error.UnauthorizedException;
 
 public class BitcoinRestClient {

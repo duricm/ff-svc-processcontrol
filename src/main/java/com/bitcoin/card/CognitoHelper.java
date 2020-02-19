@@ -23,6 +23,7 @@ import com.amazonaws.services.cognitoidp.model.*;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.amazonaws.services.s3.model.Bucket;
+import com.bitcoin.card.error.BadRequestException;
 
 import org.apache.log4j.Logger;
 import org.json.JSONObject;
@@ -78,7 +79,7 @@ class CognitoHelper {
   
     }
 
-    String GetTokenURL() {
+    String getTokenURL() {
         String customurl = "https://%s.auth.%s.amazoncognito.com/oauth2/token";
 
         return String.format(customurl, CUSTOMDOMAIN, REGION);
@@ -93,7 +94,7 @@ class CognitoHelper {
      * @param phonenumber phone number to sign up.
      * @return whether the call was successful or not.
      */
-    boolean SignUpUser(String username, String password, String email, String phonenumber) {
+    boolean signUpUser(String username, String password, String email, String phonenumber) {
         AnonymousAWSCredentials awsCreds = new AnonymousAWSCredentials();
         
         AWSCognitoIdentityProvider cognitoIdentityProvider = AWSCognitoIdentityProviderClientBuilder
@@ -138,7 +139,7 @@ class CognitoHelper {
      * @param code     Verification code delivered to the user.
      * @return if the verification is successful.
      */
-    boolean VerifyAccessCode(String username, String code) {
+    boolean verifyAccessCode(String username, String code) {
         AnonymousAWSCredentials awsCreds = new AnonymousAWSCredentials();
         AWSCognitoIdentityProvider cognitoIdentityProvider = AWSCognitoIdentityProviderClientBuilder
                 .standard()
@@ -171,7 +172,7 @@ class CognitoHelper {
      * @param password represents the password in the cognito user pool
      * @return returns the JWT token after the validation
      */
-    String ValidateUser(String username, String password) {
+    String validateUser(String username, String password) {
     	
         CognitoAuthenticationHelper helper = new CognitoAuthenticationHelper(POOL_ID, CLIENTAPP_ID, "", REGION);
         return helper.PerformSRPAuthentication(username, password);
@@ -245,7 +246,7 @@ class CognitoHelper {
      * @param username user to be reset
      * @return returns code delivery details
      */
-    String ResetPassword(String username) {
+    String resetPassword(String username) {
         AnonymousAWSCredentials awsCreds = new AnonymousAWSCredentials();
         AWSCognitoIdentityProvider cognitoIdentityProvider = AWSCognitoIdentityProviderClientBuilder
                 .standard()
@@ -274,7 +275,7 @@ class CognitoHelper {
      * @param code code sent for password reset from the ResetPassword() method above
      * @return returns code delivery details
      */
-    String UpdatePassword(String username, String newpw, String code) {
+    String updatePassword(String username, String newpw, String code) {
         AnonymousAWSCredentials awsCreds = new AnonymousAWSCredentials();
         AWSCognitoIdentityProvider cognitoIdentityProvider = AWSCognitoIdentityProviderClientBuilder
                 .standard()
@@ -292,7 +293,7 @@ class CognitoHelper {
         try {
             confirmPasswordResult = cognitoIdentityProvider.confirmForgotPassword(confirmPasswordRequest);
         } catch (Exception e) {
-            // handle exception here
+            throw new BadRequestException(e.getMessage());
         }
         return confirmPasswordResult.toString();
     }
@@ -304,7 +305,7 @@ class CognitoHelper {
      * @param credentials Credentials to be used for displaying buckets
      * @return
      */
-    String ListBucketsForUser(Credentials credentials) {
+    String listBucketsForUser(Credentials credentials) {
         BasicSessionCredentials awsCreds = new BasicSessionCredentials(credentials.getAccessKeyId(), credentials.getSecretKey(), credentials.getSessionToken());
         AmazonS3 s3Client = AmazonS3ClientBuilder.standard()
                 .withCredentials(new AWSStaticCredentialsProvider(awsCreds))
