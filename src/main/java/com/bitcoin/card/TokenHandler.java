@@ -53,9 +53,7 @@ public class TokenHandler {
         String header = new String(decoder.decode(tokenParts[0]));
         String payload = new String(decoder.decode(tokenParts[1]));
         String signature = new String(decoder.decode(tokenParts[2]));
-        
-        System.out.println("Header is " + header);
-        
+                
 	    JSONObject currentObject;
 		try {
 			currentObject = new JSONObject(header);

@@ -350,7 +350,7 @@ public class BitcoinCardController {
     }
     
     
-    @GetMapping(value = "/files/me")
+    @GetMapping(value = "/files")
     public List<UserDocument> getAllUserDocuments(@RequestHeader(name = "authorization") Optional<String> authorization) throws Exception {
     	
     	
@@ -386,8 +386,8 @@ public class BitcoinCardController {
     
     }
  
-    @GetMapping(value = "/files")
-    public @ResponseBody ResponseEntity<byte[]> getUserDocument(@RequestParam String fileId, @RequestHeader(name = "authorization") Optional<String> authorization) throws Exception {
+    @GetMapping(value = "/files/{fileId}")
+    public @ResponseBody ResponseEntity<byte[]> getUserDocument(@PathVariable("fileId") String fileId, @RequestHeader(name = "authorization") Optional<String> authorization) throws Exception {
     	
     	LOGGER.info("Retrieving document id " + fileId);
     	
