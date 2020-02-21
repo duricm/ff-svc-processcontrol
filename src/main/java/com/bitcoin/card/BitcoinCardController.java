@@ -453,6 +453,39 @@ public class BitcoinCardController {
     
     // Find
     @ResponseStatus(HttpStatus.OK)
+    @GetMapping("/users/me")
+    User findMyUserInfo(@RequestHeader(name = "authorization") Optional<String> authorization) {
+   
+    	String username = th.decodeVerifyCognitoToken(authorization);
+
+    	LOGGER.info("Getting user details for " + username);
+    	
+    	User u = new User();
+    	
+    	try {
+    		if (conn == null)
+    			conn = DriverManager.getConnection(url);
+    		    		
+    		Statement s = conn.createStatement();
+    		ResultSet r = s.executeQuery("select * from users where user_name = '" + username + "'");
+    		
+    		setUserResultParameters(r, u, username);
+
+    		    		
+    	} catch (SQLException e) {
+    		
+	    	LOGGER.info("Exception!!!\n" + e.getMessage());
+
+    		e.printStackTrace();
+    	}
+    	
+    	LOGGER.info("Retrieved user data: \n" + u.toString());
+    	
+         return u;
+    }
+    
+    // Find
+    @ResponseStatus(HttpStatus.OK)
     @GetMapping("/users/search")
     User findUser(@RequestParam Optional<String> username, @RequestParam Optional<String> email, @RequestHeader(name = "authorization") Optional<String> authorization) {
    
