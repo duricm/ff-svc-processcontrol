@@ -26,21 +26,79 @@ public class User {
     private String addressPostalCode;
     private String addressState;
     private String addressCountry;
+	private String cardProviderId;
+    private String addresStreet2;
+    
+    private String shippingAddresStreet;
+	private String shippingAddressCity;
+    private String shippingAddressPostalCode;
+    private String shippingAddressState;
+    private String shippingAddressCountry;
+    private String shippingAddresStreet2;
+
+    
     private String defaultCurrencyId;
     private String socialSecurityNumber;
     private String username;
     private String password;
     
-    public String getPassword() {
+    
+    
+    public String getShippingAddresStreet2() {
+		return shippingAddresStreet2;
+	}
+
+	public void setShippingAddresStreet2(String shippingAddresStreet2) {
+		this.shippingAddresStreet2 = shippingAddresStreet2;
+	}
+
+	public String getShippingAddresStreet() {
+		return shippingAddresStreet;
+	}
+
+	public void setShippingAddresStreet(String shippingAddresStreet) {
+		this.shippingAddresStreet = shippingAddresStreet;
+	}
+
+	public String getShippingAddressCity() {
+		return shippingAddressCity;
+	}
+
+	public void setShippingAddressCity(String shippingAddressCity) {
+		this.shippingAddressCity = shippingAddressCity;
+	}
+
+	public String getShippingAddressPostalCode() {
+		return shippingAddressPostalCode;
+	}
+
+	public void setShippingAddressPostalCode(String shippingAddressPostalCode) {
+		this.shippingAddressPostalCode = shippingAddressPostalCode;
+	}
+
+	public String getShippingAddressState() {
+		return shippingAddressState;
+	}
+
+	public void setShippingAddressState(String shippingAddressState) {
+		this.shippingAddressState = shippingAddressState;
+	}
+
+	public String getShippingAddressCountry() {
+		return shippingAddressCountry;
+	}
+
+	public void setShippingAddressCountry(String shippingAddressCountry) {
+		this.shippingAddressCountry = shippingAddressCountry;
+	}
+
+	public String getPassword() {
 		return password;
 	}
 
 	public void setPassword(String password) {
 		this.password = password;
 	}
-
-	private String cardProviderId;
-    private String addresStreet2;
     
     public String getAddresStreet2() {
 		return addresStreet2;

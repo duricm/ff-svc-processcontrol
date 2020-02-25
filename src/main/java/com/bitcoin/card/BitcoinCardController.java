@@ -28,7 +28,6 @@ import com.bitcoin.card.entity.VerifyAccessCode;
 import com.bitcoin.card.error.UnauthorizedException;
 import com.bitcoin.card.error.UserNotFoundException;
 import com.bitcoin.card.error.WrongFileTypeException;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -199,8 +198,9 @@ public class BitcoinCardController {
     void newUser(@RequestBody User u, @RequestHeader(name = "authorization") Optional<String> authorization) throws SQLException {
     	String sql = "insert into users (first_name, last_name, email, phone_number, date_of_birth, gender, is_active, promotional_consent" +
     	", address_street, address_city, address_postal_code, address_state, address_country, default_currency_id, social_security_number" +
-    			", user_name, address_street_2, created_at, updated_at) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, now(), now())";
-
+    			", user_name, address_street_2, shipping_address_street, shipping_address_city, shipping_address_postal_code, shipping_address_state, " + 
+    	"shipping_address_country, shipping_address_street_2, created_at, updated_at) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, now(), now())";
+    	    	
     	LOGGER.info("Adding new user to database...");
     	LOGGER.info("User data: \n" + u.toString());
 
@@ -227,6 +227,13 @@ public class BitcoinCardController {
     	stmt.setString(15, u.getSocialSecurityNumber());
     	stmt.setString(16, u.getUsername());
     	stmt.setString(17, u.getAddresStreet2());
+    	
+    	stmt.setString(18, u.getShippingAddresStreet());
+    	stmt.setString(19, u.getShippingAddressCity());
+    	stmt.setString(20, u.getShippingAddressPostalCode());
+    	stmt.setString(21, u.getShippingAddressState());
+    	stmt.setString(22, u.getShippingAddressCountry());
+    	stmt.setString(23, u.getShippingAddresStreet2());
     	
     	LOGGER.info("Executing insert statement...");
     	stmt.execute();
@@ -604,6 +611,20 @@ public class BitcoinCardController {
 		if (u.getAddresStreet2() != null)
 			sql += "address_street_2 = '" + u.getAddresStreet2() + "', ";
 		
+		// Shipping address parameters
+		if (u.getShippingAddresStreet() != null)
+			sql += "shipping_address_street = '" + u.getShippingAddresStreet() + "', ";
+		if (u.getShippingAddressCity() != null)
+			sql += "shipping_address_city = '" + u.getShippingAddressCity() + "', ";
+		if (u.getShippingAddressPostalCode() != null)
+			sql += "shipping_address_postal_code = '" + u.getShippingAddressPostalCode() + "', ";
+		if (u.getShippingAddressState() != null)
+			sql += "shipping_address_state = '" + u.getShippingAddressState() + "', ";
+		if (u.getShippingAddressCountry() != null)
+			sql += "shipping_address_country = '" + u.getShippingAddressCountry() + "', ";
+		if (u.getShippingAddresStreet2() != null)
+			sql += "address_street_2 = '" + u.getShippingAddresStreet2() + "', ";
+		
 		sql += "updated_at= now() where user_name = '" + username + "'";
 		
 		Statement s = conn.createStatement();
@@ -666,6 +687,13 @@ public class BitcoinCardController {
 	    		u.setUsername(r.getString("user_name"));
 	    		u.setCreatedAt(r.getTimestamp("created_at"));
 	    		u.setUpdatedAt(r.getTimestamp("updated_at"));
+	    		
+	    		u.setShippingAddresStreet(r.getString("shipping_address_street"));
+	    		u.setShippingAddresStreet2(r.getString("shipping_address_street_2"));
+	    		u.setShippingAddressCity(r.getString("shipping_address_city"));
+	    		u.setShippingAddressPostalCode(r.getString("shipping_address_postal_code"));
+	    		u.setShippingAddressState(r.getString("shipping_address_state"));
+	    		u.setShippingAddressCountry(r.getString("shipping_address_country"));
 	    	}
 		} catch (SQLException e) {
 			
