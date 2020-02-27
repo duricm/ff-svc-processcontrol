@@ -43,7 +43,6 @@ class CognitoHelper {
     private String FED_POOL_ID;
     private String CUSTOMDOMAIN;
     private String REGION;
-    AWSCredentials awsC = new BasicAWSCredentials("AKIA6GVGJ2YJLH72K634", "H9x9FNMsTP8HFtMxpDf2UwTpVFFaklM+83FvGlfM");
 
 	private final Logger LOGGER = Logger.getLogger(this.getClass());
 
@@ -99,7 +98,7 @@ class CognitoHelper {
         
         AWSCognitoIdentityProvider cognitoIdentityProvider = AWSCognitoIdentityProviderClientBuilder
                 .standard()
-                .withCredentials(new AWSStaticCredentialsProvider(awsC))
+                .withCredentials(new AWSStaticCredentialsProvider(awsCreds))
                 .withRegion(Regions.fromName(REGION))
                 .build();
 
@@ -114,7 +113,7 @@ class CognitoHelper {
         attributeType.setName("phone_number");
         attributeType.setValue(phonenumber);
         list.add(attributeType);
-*/
+       */
         AttributeType attributeType1 = new AttributeType();
         attributeType1.setName("email");
         attributeType1.setValue(email);
@@ -239,6 +238,54 @@ class CognitoHelper {
         }
         return credentials;
     }*/
+    
+    String getCognitoUser(String token)
+    {
+    	
+        AnonymousAWSCredentials awsCreds = new AnonymousAWSCredentials();
+        AWSCognitoIdentityProvider cognitoIdentityProvider = AWSCognitoIdentityProviderClientBuilder
+                .standard()
+                .withCredentials(new AWSStaticCredentialsProvider(awsCreds))
+                .withRegion(Regions.fromName(REGION))
+                .build();
+       
+        GetUserRequest user = new GetUserRequest();
+        
+        user.setAccessToken(token);
+        GetUserResult userResult;
+        
+        try
+        {
+            userResult = cognitoIdentityProvider.getUser(user);
+        } 
+        catch (Exception e) {
+        	throw new BadRequestException(e.getLocalizedMessage());
+        }
+        
+        return userResult.getUsername();
+    }
+    
+    void signoutUser(String token)
+    {
+    	
+        AnonymousAWSCredentials awsCreds = new AnonymousAWSCredentials();
+        AWSCognitoIdentityProvider cognitoIdentityProvider = AWSCognitoIdentityProviderClientBuilder
+                .standard()
+                .withCredentials(new AWSStaticCredentialsProvider(awsCreds))
+                .withRegion(Regions.fromName(REGION))
+                .build();
+        
+        GlobalSignOutRequest globalSignOutRequest = new GlobalSignOutRequest();
+        globalSignOutRequest.setAccessToken(token);
+        try
+        {
+        	GlobalSignOutResult result = cognitoIdentityProvider.globalSignOut(globalSignOutRequest);  
+        } 
+        catch (Exception e) {
+        	throw new BadRequestException(e.getLocalizedMessage());
+        }
+        
+    }
 
     /**
      * Start reset password procedure by sending reset code
@@ -253,6 +300,9 @@ class CognitoHelper {
                 .withCredentials(new AWSStaticCredentialsProvider(awsCreds))
                 .withRegion(Regions.fromName(REGION))
                 .build();
+        
+      
+       
 
         ForgotPasswordRequest forgotPasswordRequest = new ForgotPasswordRequest();
         forgotPasswordRequest.setUsername(username);

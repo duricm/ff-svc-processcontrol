@@ -25,6 +25,7 @@ import com.bitcoin.card.entity.User;
 import com.bitcoin.card.entity.UserDocument;
 import com.bitcoin.card.entity.Username;
 import com.bitcoin.card.entity.VerifyAccessCode;
+import com.bitcoin.card.error.BadRequestException;
 import com.bitcoin.card.error.UnauthorizedException;
 import com.bitcoin.card.error.UserNotFoundException;
 import com.bitcoin.card.error.WrongFileTypeException;
@@ -174,6 +175,29 @@ public class BitcoinCardController {
     	a.setAccess_token(accessToken);
     		
     	return a;
+    }
+    
+    // Find
+    @ResponseStatus(HttpStatus.OK)
+    @GetMapping("/logout")
+    void logoutUser(@RequestHeader(name = "authorization") Optional<String> authorization) {
+    	
+    	String username = th.decodeVerifyCognitoToken(authorization);
+    	
+    	LOGGER.info("Logging out user " + username);
+
+    	String[] authorizationParts = null;
+    	    	
+    	if (authorization.isPresent())
+    		authorizationParts = authorization.get().split(" ");
+    	
+    	if (authorization.isEmpty() || authorizationParts.length != 2)
+    		throw new UnauthorizedException("Bad token value");
+    	
+    	String token = authorizationParts[1];
+    	
+    	helper.signoutUser(token);
+    	    	
     }
     
     // Verify user's access code so user can be confirmed in Cognito

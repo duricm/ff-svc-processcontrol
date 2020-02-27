@@ -26,6 +26,8 @@ public class TokenHandler {
 	private static String badTokenMessage = "Bad token value";
 	
     private BitcoinRestClient restClient = new BitcoinRestClient();
+	CognitoHelper helper = new CognitoHelper();
+
 	
     String decodeVerifyCognitoToken(Optional<String> authorization) 
 	{
@@ -87,7 +89,10 @@ public class TokenHandler {
 	    if (currentObject.getLong("exp") < (System.currentTimeMillis() / 1000))
 	    		throw new UnauthorizedException("Token expired!");
 	    
-	    username = currentObject.getString("username");
+	    //username = currentObject.getString("username");
+	    
+		username = helper.getCognitoUser(token);
+
 	/*    
 	    System.out.println("Token is: " + hmacSha256(header + "." + payload, signature));
 	    System.out.println("Original Token is: " + token);
