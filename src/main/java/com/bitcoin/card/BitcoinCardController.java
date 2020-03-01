@@ -62,6 +62,12 @@ public class BitcoinCardController {
     private static String url = "jdbc:postgresql://bitcoincom-card.cgll0kqdznrn.us-east-2.rds.amazonaws.com:5432/bitcoincard1?user=bch_admin&password=letitsnow890*()&ssl=false";
 	private static Connection conn;
 
+    @GetMapping("/test2")
+	public String test() {
+    	
+    	return "Test endpoint.";
+    }
+	
     @GetMapping("/cognito")
 	public User getUserInfo() {
 

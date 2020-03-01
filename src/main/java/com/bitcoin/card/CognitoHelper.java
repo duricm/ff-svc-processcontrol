@@ -301,9 +301,6 @@ class CognitoHelper {
                 .withRegion(Regions.fromName(REGION))
                 .build();
         
-      
-       
-
         ForgotPasswordRequest forgotPasswordRequest = new ForgotPasswordRequest();
         forgotPasswordRequest.setUsername(username);
         forgotPasswordRequest.setClientId(CLIENTAPP_ID);
