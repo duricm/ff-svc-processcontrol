@@ -1,0 +1,21 @@
+{
+    "networkMode": "awsvpc",
+    "containerDefinitions": [
+        {
+            "essential": true,
+            "name": "tomcat-webserver",
+            "image": "tomcat",
+            "memory": 2048,
+            "cpu": 1024,
+            "portMappings": [
+                {
+                    "hostPort": 443,
+                    "containerPort": 8443,
+                    "protocol": "tcp"
+                }
+            ]
+            }
+        }
+    ],
+    "family": "tomcat-webserver"
+}
