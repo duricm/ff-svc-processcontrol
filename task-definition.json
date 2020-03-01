@@ -3,7 +3,7 @@
     "containerDefinitions": [
         {
             "essential": true,
-            "name": "56b625f8-4236-481f-81e9-83e01b9d49e8",
+            "name": "tomcat-webserver",
             "image": "tomcat",
             "memory": 2048,
             "cpu": 1024,
