@@ -43,8 +43,8 @@ jobs:
     - name: Configure AWS credentials
       uses: aws-actions/configure-aws-credentials@v1
       with:
-        aws-access-key-id: ${{ AKIA6GVGJ2YJDIIUK63Q }}
-        aws-secret-access-key: ${{ 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 }}
+        aws-access-key-id: ${{ 'AKIA6GVGJ2YJDIIUK63Q' }}
+        aws-secret-access-key: ${{ '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' }}
         aws-region: us-east-1
 
     - name: Login to Amazon ECR
@@ -54,9 +54,9 @@ jobs:
     - name: Build, tag, and push image to Amazon ECR
       id: build-image
       env:
-        ECR_REGISTRY: ${{ 976380089874.dkr.ecr.us-east-1.amazonaws.com }}
-        ECR_REPOSITORY: bitcoin-card2
-        IMAGE_TAG: ${{ latest }}
+        ECR_REGISTRY: ${{ '976380089874.dkr.ecr.us-east-1.amazonaws.com' }}
+        ECR_REPOSITORY: 'bitcoin-card2'
+        IMAGE_TAG: ${{ 'latest' }}
       run: |
         # Build a docker container and
         # push it to ECR so that it can
