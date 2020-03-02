@@ -55,7 +55,7 @@ jobs:
       id: build-image
       env:
         ECR_REGISTRY: ${{ '976380089874.dkr.ecr.us-east-1.amazonaws.com' }}
-        ECR_REPOSITORY: 'bitcoin-card2'
+        ECR_REPOSITORY: 'bitcoin-card3'
         IMAGE_TAG: ${{ 'latest' }}
       run: |
         # Build a docker container and
@@ -70,13 +70,13 @@ jobs:
       uses: aws-actions/amazon-ecs-render-task-definition@v1
       with:
         task-definition: task-definition.json
-        container-name: bitcoin-card
+        container-name: bitcoin-card3-container
         image: ${{ steps.build-image.outputs.image }}
 
     - name: Deploy Amazon ECS task definition
       uses: aws-actions/amazon-ecs-deploy-task-definition@v1
       with:
         task-definition: ${{ steps.task-def.outputs.task-definition }}
-        service: card-service 
-        cluster: bitcoin-card
-        wait-for-service-stability: false
+        service: tomcat-webserver-service 
+        cluster: default
+        wait-for-service-stability: true
