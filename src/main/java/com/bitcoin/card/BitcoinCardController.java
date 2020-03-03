@@ -24,6 +24,7 @@ import com.bitcoin.card.entity.UpdatePassword;
 import com.bitcoin.card.entity.User;
 import com.bitcoin.card.entity.UserDocument;
 import com.bitcoin.card.entity.Username;
+import com.bitcoin.card.entity.UsernameOrEmail;
 import com.bitcoin.card.entity.VerifyAccessCode;
 import com.bitcoin.card.error.BadRequestException;
 import com.bitcoin.card.error.UnauthorizedException;
@@ -140,12 +141,39 @@ public class BitcoinCardController {
 	
     // Reset password will send reset code to user's email. After this update password should be
 	// called with new password
-    @PostMapping(value = "/reset-password/me", consumes = "*/*")
+    @PostMapping(value = "/reset-password", consumes = "*/*")
     @ResponseStatus(HttpStatus.OK)
-    ResponseMessage resetPassword(@RequestHeader(name = "authorization") Optional<String> authorization) 
+    ResponseMessage resetPassword(@RequestBody UsernameOrEmail uoe, @RequestHeader(name = "authorization") Optional<String> authorization) throws SQLException 
     {
     	
-    	String username = th.decodeVerifyCognitoToken(authorization);
+    	//String username = th.decodeVerifyCognitoToken(authorization);
+    	
+    	String tempUoe = "";
+    	String username = "";
+    	
+    	if (uoe.getUsernameOrEmail() != null)
+    		tempUoe = uoe.getUsernameOrEmail();
+    	else
+    		throw new BadRequestException("You must supply username or email as input parameter.");
+    	
+    	// See if parameter is email
+    	if (tempUoe.indexOf('@') > 0)
+    	{
+    		if (conn == null)
+    			conn = DriverManager.getConnection(url);
+    		
+        	PreparedStatement stmt = conn.prepareStatement("select user_name from users where email = ?");  
+        	stmt.setString(1, tempUoe);
+        	ResultSet r = stmt.executeQuery();
+        	
+	    	if (r.next() == false)
+	    		throw new UserNotFoundException(tempUoe);
+	    	else
+	    		username = r.getString(1);
+
+    	}
+    	else 
+    		username = tempUoe;
     	
     	ResponseMessage response = new ResponseMessage();
     	
