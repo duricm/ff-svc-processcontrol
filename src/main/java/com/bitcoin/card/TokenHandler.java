@@ -13,11 +13,6 @@ import javax.crypto.spec.SecretKeySpec;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import com.auth0.jwt.JWT;
-import com.auth0.jwt.JWTVerifier;
-import com.auth0.jwt.algorithms.Algorithm;
-import com.auth0.jwt.interfaces.DecodedJWT;
-import com.auth0.jwt.interfaces.RSAKeyProvider;
 import com.bitcoin.card.error.UnauthorizedException;
 
 public class TokenHandler {

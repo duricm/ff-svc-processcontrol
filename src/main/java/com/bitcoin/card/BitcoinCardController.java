@@ -47,7 +47,7 @@ import java.util.Optional;
 
 import org.apache.log4j.Logger;
 
-@CrossOrigin(origins = "http://localhost:3000", allowCredentials = "true", 
+@CrossOrigin(origins = {"http://localhost:3000", "https://card.btctest.net", "https://card.bitcoin.com"}, allowCredentials = "true", 
 methods = {RequestMethod.DELETE, RequestMethod.GET, RequestMethod.POST, RequestMethod.PUT, RequestMethod.OPTIONS})
 @RestController
 public class BitcoinCardController {

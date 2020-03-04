@@ -309,7 +309,7 @@ class CognitoHelper {
         try {
             forgotPasswordResult = cognitoIdentityProvider.forgotPassword(forgotPasswordRequest);
         } catch (Exception e) {
-            // handle exception here
+            throw new BadRequestException(e.getMessage());
         }
         return forgotPasswordResult.toString();
     }
