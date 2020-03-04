@@ -305,13 +305,12 @@ class CognitoHelper {
         forgotPasswordRequest.setUsername(username);
         forgotPasswordRequest.setClientId(CLIENTAPP_ID);
         ForgotPasswordResult forgotPasswordResult = new ForgotPasswordResult();
-
         try {
             forgotPasswordResult = cognitoIdentityProvider.forgotPassword(forgotPasswordRequest);
         } catch (Exception e) {
             throw new BadRequestException(e.getMessage());
         }
-        return forgotPasswordResult.toString();
+        return forgotPasswordResult.getCodeDeliveryDetails().getDestination();
     }
 
     /**
