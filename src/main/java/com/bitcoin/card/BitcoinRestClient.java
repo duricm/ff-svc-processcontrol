@@ -54,6 +54,8 @@ public class BitcoinRestClient {
 			
 			JSONObject dataObject = new JSONObject();
 			dataObject.putOnce("data", postObj);
+			
+			System.out.println(postObj.toString());
 
 			wr.writeBytes(postObj.toString());
 		    wr.flush();

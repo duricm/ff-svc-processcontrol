@@ -63,13 +63,32 @@ public class BitcoinCardController {
     private static String url = "jdbc:postgresql://bitcoincom-card.cgll0kqdznrn.us-east-2.rds.amazonaws.com:5432/bitcoincard1?user=bch_admin&password=letitsnow890*()&ssl=false";
 	private static Connection conn;
 	
-	/*
+	
     @GetMapping("/test5")
 	public String test() {
     	
+    	BitcoinRestClient brClient = new BitcoinRestClient();
+    
+    	User u = new User();
+    	u.setFirstName("MEHMED");
+    	u.setLastName("DURIC");
+    	u.setEmail("test5@yahoo.com");
+    	u.setAddresStreet("111 Clarke Rd");
+    	u.setAddressCity("Richmond");
+    	u.setAddressState("VA");
+    	u.setAddressPostalCode("23233");
+    	u.setAddressCountry("US");
+    	u.setPhoneNumber("+1 310 867 5323");
+    	u.setUsername("test5");
+    	u.setSocialSecurityNumber("012345672");
+    	u.setDateOfBirth("1969-12-31");
+    	
+    	brClient.createTernioUser(u);
+	
+    	
     	return "Test endpoint Mehmed Duric.";
     }
-	*/
+
 	
     @GetMapping("/cognito")
 	public User getUserInfo() {
@@ -628,7 +647,7 @@ public class BitcoinCardController {
 
     // Save or update
     @ResponseStatus(HttpStatus.OK)
-    @PutMapping("/users/me")
+    @PutMapping(value = "/users/me", consumes = "*/*")
     void updateUser(@RequestBody User u, @RequestHeader(name = "authorization") Optional<String> authorization) throws SQLException {
     	
     	String username = th.decodeVerifyCognitoToken(authorization);
