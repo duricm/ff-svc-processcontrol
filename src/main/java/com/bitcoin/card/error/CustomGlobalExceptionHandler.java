@@ -8,6 +8,8 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
+import com.bitcoin.card.BitcoinConstants;
+
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.sql.SQLException;
@@ -34,7 +36,16 @@ public class CustomGlobalExceptionHandler extends ResponseEntityExceptionHandler
 		
 		LOGGER.error("Error!!! Responding with bad request message.");
 		
-        response.sendError(HttpStatus.BAD_REQUEST.value(), sqlE.getLocalizedMessage());
+		String message = "";
+		
+		if (sqlE.getLocalizedMessage().contains("unique_email"))
+			message = BitcoinConstants.UNIQUE_EMAIL;
+		else 
+			if (sqlE.getLocalizedMessage().contains("unique_user_name"))
+				message = BitcoinConstants.UNIQUE_USER_NAME;
+			
+		
+        response.sendError(HttpStatus.BAD_REQUEST.value(), message);
        
     }
 	
@@ -52,9 +63,10 @@ public class CustomGlobalExceptionHandler extends ResponseEntityExceptionHandler
 	@ExceptionHandler(BadRequestException.class)
     public void springHandleBadRequest(HttpServletResponse response) throws IOException {
 		
-		LOGGER.error("Error!!! Responding with unauthorized user message.");
+		LOGGER.error("Bad request!");
 		
         response.sendError(HttpStatus.BAD_REQUEST.value());
+        
        
     }
 	

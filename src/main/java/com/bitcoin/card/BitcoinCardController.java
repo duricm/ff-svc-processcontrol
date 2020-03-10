@@ -50,17 +50,17 @@ import org.apache.log4j.Logger;
 @CrossOrigin(origins = {"http://localhost:3000", "https://card.btctest.net", "https://card.bitcoin.com"}, allowCredentials = "true", 
 methods = {RequestMethod.DELETE, RequestMethod.GET, RequestMethod.POST, RequestMethod.PUT, RequestMethod.OPTIONS})
 @RestController
-public class BitcoinCardController {
+public class BitcoinCardController extends BitcoinUtility {
 	
 	private final Logger LOGGER = Logger.getLogger(this.getClass());
 	
 	TokenHandler th = new TokenHandler();
 	
 	CognitoHelper helper = new CognitoHelper();
+	BitcoinRestClient brClient = new BitcoinRestClient();
 
 	//private static String url = "jdbc:postgresql://3.136.241.73:5432/bitcoin-card?user=postgres&password=bch_admin&ssl=true&sslmode=verify-ca&sslrootcert=./.postgres/root.crt";
 
-    private static String url = "jdbc:postgresql://bitcoincom-card.cgll0kqdznrn.us-east-2.rds.amazonaws.com:5432/bitcoincard1?user=bch_admin&password=letitsnow890*()&ssl=false";
 	private static Connection conn;
 	
 	
@@ -72,18 +72,23 @@ public class BitcoinCardController {
     	User u = new User();
     	u.setFirstName("MEHMED");
     	u.setLastName("DURIC");
-    	u.setEmail("test5@yahoo.com");
+    	u.setEmail("test10h@yahoo.com");
     	u.setAddresStreet("111 Clarke Rd");
     	u.setAddressCity("Richmond");
     	u.setAddressState("VA");
     	u.setAddressPostalCode("23233");
     	u.setAddressCountry("US");
-    	u.setPhoneNumber("+1 310 867 5323");
-    	u.setUsername("test5");
-    	u.setSocialSecurityNumber("012345672");
+    	u.setPhoneNumber("3108675309");
+    	u.setUsername("test10h");
+    	u.setSocialSecurityNumber("111111111");
     	u.setDateOfBirth("1969-12-31");
     	
-    	brClient.createTernioUser(u);
+    	try {
+			brClient.createTernioUser(u);
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	
     	
     	return "Test endpoint Mehmed Duric.";
@@ -175,13 +180,13 @@ public class BitcoinCardController {
     	if (uoe.getUsernameOrEmail() != null)
     		tempUoe = uoe.getUsernameOrEmail();
     	else
-    		throw new BadRequestException("You must supply username or email as input parameter.");
+    		throw new BadRequestException(BitcoinConstants.USERNAME_OR_EMAIL_REQUIRED);
     	
     	// See if parameter is email
     	if (tempUoe.indexOf('@') > 0)
     	{
     		if (conn == null)
-    			conn = DriverManager.getConnection(url);
+    			conn = DriverManager.getConnection(BitcoinConstants.DB_URL);
     		
         	PreparedStatement stmt = conn.prepareStatement("select user_name from users where email = ?");  
         	stmt.setString(1, tempUoe);
@@ -207,8 +212,15 @@ public class BitcoinCardController {
     @ResponseStatus(HttpStatus.OK)
     ResponseMessage updatePassword(@RequestBody UpdatePassword u, @RequestHeader(name = "authorization") Optional<String> authorization) 
     {
-    	System.out.println("Updating password...");
     	String username = th.decodeVerifyCognitoToken(authorization);
+    	
+    	LOGGER.info("Updating password for user " + username);
+
+    	if (u.getNewPassword() == null)
+    		throw new BadRequestException(BitcoinConstants.PASSWORD_REQUIRED);
+    	else 
+        	if (u.getCode() == null)
+        		throw new BadRequestException(BitcoinConstants.CODE_REQUIRED);
 
     	ResponseMessage response = new ResponseMessage();
     	
@@ -222,6 +234,13 @@ public class BitcoinCardController {
     @ResponseStatus(HttpStatus.OK)
     AccessToken loginUser(@RequestBody Login l) 
     {
+    	
+    	if (l.getUsername() == null)
+    		throw new BadRequestException(BitcoinConstants.USER_NAME_REQUIRED);
+    	else 
+        	if (l.getPassword() == null)
+        		throw new BadRequestException(BitcoinConstants.PASSWORD_REQUIRED);
+    	
     	AccessToken a = new AccessToken();
     	String accessToken;
     	
@@ -282,11 +301,20 @@ public class BitcoinCardController {
     	    	
     	LOGGER.info("Adding new user to database...");
     	LOGGER.info("User data: \n" + u.toString());
+    	
+    	if (u.getUsername() == null)
+    		throw new BadRequestException(BitcoinConstants.USER_NAME_REQUIRED);
+    	else
+    		if (u.getPassword() == null)
+        		throw new BadRequestException(BitcoinConstants.PASSWORD_REQUIRED);
+    		else
+    			if (u.getEmail() == null)
+    	    		throw new BadRequestException(BitcoinConstants.EMAIL_REQUIRED);
 
     	//String username = th.decodeVerifyCognitoToken(authorization);
     	
 		if (conn == null)
-			conn = DriverManager.getConnection(url);
+			conn = DriverManager.getConnection(BitcoinConstants.DB_URL);
 		
     	PreparedStatement stmt = conn.prepareStatement(sql);  
     	stmt.setString(1,u.getFirstName());
@@ -330,6 +358,11 @@ public class BitcoinCardController {
 		    stmt.execute();
 		    throw new SQLException("Failed to create Cognito user + " + u.getUsername());
     	}
+    	
+    	if (u.getAddressCountry().equals("US"))
+        	brClient.createTernioUser(u);
+
+    		
 
     }
     
@@ -402,7 +435,7 @@ public class BitcoinCardController {
     	}
     	
 		if (conn == null)
-			conn = DriverManager.getConnection(url);
+			conn = DriverManager.getConnection(BitcoinConstants.DB_URL);
     	
         final InputStream in = file.getInputStream();
         
@@ -417,25 +450,6 @@ public class BitcoinCardController {
     
     }
     
-    private String getUserId(String username) throws SQLException
-    {
-    	
-		if (conn == null)
-			conn = DriverManager.getConnection(url);
-    	
-    	String id = "";
-    	Statement s = conn.createStatement();
-
-    	ResultSet r = s.executeQuery("select user_id from users where user_name = '" + username + "'");
-    	if (r.next() == false)
-    		throw new UserNotFoundException("User " + username + " not found in our system.");
-    	else
-    		id = r.getString("user_id");
-    
-    	return id;
-    }
-    
-    
     @GetMapping(value = "/files")
     public List<UserDocument> getAllUserDocuments(@RequestHeader(name = "authorization") Optional<String> authorization) throws Exception {
     	
@@ -448,7 +462,7 @@ public class BitcoinCardController {
     	LOGGER.info("Retrieving user document for user " + username);
     	
 		if (conn == null)
-			conn = DriverManager.getConnection(url);
+			conn = DriverManager.getConnection(BitcoinConstants.DB_URL);
     
 		id = getUserId(username);
     	
@@ -481,7 +495,7 @@ public class BitcoinCardController {
     	String id = getUserId(username);
     	
 		if (conn == null)
-			conn = DriverManager.getConnection(url);
+			conn = DriverManager.getConnection(BitcoinConstants.DB_URL);
     
     	PreparedStatement ps = conn.prepareStatement("select document_name, document from user_documents where user_id = ? and document_id = ?");
     	ps.setInt(1, Integer.parseInt(id));
@@ -550,7 +564,7 @@ public class BitcoinCardController {
     	
     	try {
     		if (conn == null)
-    			conn = DriverManager.getConnection(url);
+    			conn = DriverManager.getConnection(BitcoinConstants.DB_URL);
     		    		
     		Statement s = conn.createStatement();
     		ResultSet r = s.executeQuery("select * from users where user_name = '" + username + "'");
@@ -594,7 +608,7 @@ public class BitcoinCardController {
     	
     	try {
     		if (conn == null)
-    			conn = DriverManager.getConnection(url);
+    			conn = DriverManager.getConnection(BitcoinConstants.DB_URL);
     		    		
     		Statement s = conn.createStatement();
     		ResultSet r = s.executeQuery("select * from users where " + conditionStr + "'");
@@ -651,15 +665,43 @@ public class BitcoinCardController {
     void updateUser(@RequestBody User u, @RequestHeader(name = "authorization") Optional<String> authorization) throws SQLException {
     	
     	String username = th.decodeVerifyCognitoToken(authorization);
+    	u.setUsername(username);
     	
     	LOGGER.info("Updating user data for user: " + username);
 
     	LOGGER.info("User data: \n" + u.toString());
     	
+    	if (u.getFirstName() == null)
+    		throw new BadRequestException(BitcoinConstants.FIRST_NAME_REQUIRED);
+    	else 
+        	if (u.getLastName() == null)
+        		throw new BadRequestException(BitcoinConstants.LAST_NAME_REQUIRED);
+        	else 
+            	if (u.getPhoneNumber() == null)
+            		throw new BadRequestException(BitcoinConstants.PHONE_NUMBER_REQUIRED);
+            	else 
+                	if (u.getEmail() == null)
+                		throw new BadRequestException(BitcoinConstants.EMAIL_REQUIRED);
+                	else 
+                    	if (u.getAddresStreet() == null)
+                    		throw new BadRequestException(BitcoinConstants.BILLING_ADDRESS_REQUIRED);
+                    	else 
+                        	if (u.getAddressCity() == null)
+                        		throw new BadRequestException(BitcoinConstants.CITY_REQUIRED);
+                        	else 
+                            	if (u.getAddressState() == null)
+                            		throw new BadRequestException(BitcoinConstants.STATE_REQUIRED);
+                            	else 
+                                	if (u.getAddressCountry() == null)
+                                		throw new BadRequestException(BitcoinConstants.COUNTRY_REQUIRED);
+                                	else 
+                                    	if (u.getAddressPostalCode() == null)
+                                    		throw new BadRequestException(BitcoinConstants.POSTAL_CODE_REQUIRED);
+    	
     	String sql = "update users set ";
  
 		if (conn == null)
-			conn = DriverManager.getConnection(url);
+			conn = DriverManager.getConnection(BitcoinConstants.DB_URL);
 		
 		if (u.getFirstName() != null)
 			sql += "first_name = '" + u.getFirstName() + "', ";
@@ -712,6 +754,14 @@ public class BitcoinCardController {
 		
 		if (result == 0)
 			throw new UserNotFoundException(u.getId().toString());
+		
+    	try {
+			brClient.createTernioUser(u);
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+		
+		
 
     }
 
@@ -724,7 +774,7 @@ public class BitcoinCardController {
     	LOGGER.info("Deleting user: " + username);
 
     		if (conn == null)
-    			conn = DriverManager.getConnection(url);
+    			conn = DriverManager.getConnection(BitcoinConstants.DB_URL);
     		
     		id = getUserId(username);
     		

@@ -3,12 +3,17 @@ package com.bitcoin.card;
 import java.io.BufferedReader;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
 
 import org.apache.log4j.Logger;
 import org.json.JSONException;
@@ -17,12 +22,13 @@ import org.json.JSONObject;
 import com.bitcoin.card.entity.User;
 import com.bitcoin.card.error.UnauthorizedException;
 
-public class BitcoinRestClient {
+public class BitcoinRestClient extends BitcoinUtility {
 	
 	private final Logger LOGGER = Logger.getLogger(this.getClass());
 	private String ternioBaseURL = "https://whitelabel.dev.api1.blockcard.ternio.co/v1/user";
+	private static Connection dbConn;
 	
-	public void createTernioUser(User u)
+	public void createTernioUser(User u) throws SQLException
 	{
 	  try {
 
@@ -85,29 +91,34 @@ public class BitcoinRestClient {
 
 		String jsonTempString = null;
 		output = "";
-		System.out.println("Output from Server ....");
 		
 		do {
 			jsonTempString = br.readLine();
 			output += jsonTempString;
-			System.out.println("jsonTempString " + jsonTempString);
+			LOGGER.info("Output object: " + jsonTempString);
 		} while (jsonTempString != null);
-		
-		System.out.println("Output variable is " + output);
-		
 		
 	    JSONObject currentObject = new JSONObject(output);
 	    
-	    System.out.println("Getting data JSON object");
 	    JSONObject obj = currentObject.getJSONObject("data");
 	    
-	    System.out.println("Object is " + obj.toString());
+	    LOGGER.info("Object is " + obj.toString());
 	    
 	    u.setCardProviderId(obj.getString("id"));
-	    	    
 	    createTernioWallet(u);
 	    	    		
 		conn.disconnect();
+		
+		if (dbConn == null)
+			dbConn = DriverManager.getConnection(BitcoinConstants.DB_URL);
+    	        
+    	PreparedStatement ps = dbConn.prepareStatement("UPDATE USERS SET CARD_PROVIDER_ID = ? WHERE USER_NAME = ?");
+    	ps.setString(1, u.getCardProviderId());
+    	ps.setString(2, u.getUsername());
+
+    	ps.execute();
+    	ps.close();
+    	LOGGER.info("Updated card provider id.");
 
 	  } catch (MalformedURLException e) {
 
@@ -123,7 +134,7 @@ public class BitcoinRestClient {
 	}
 	}
 	
-	public void createTernioWallet(User u)
+	public void createTernioWallet(User u) throws SQLException
 	{
 	  try {
 
@@ -137,7 +148,8 @@ public class BitcoinRestClient {
 		conn.setRequestProperty("Content-Type", "application/json");
 		conn.setRequestProperty("Authorization", "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.1BlsUKDhmDjC9npBm805AOFmgb6lD_DhueUmI8zMTwg");
 
-
+		System.out.println(ternioBaseURL + "/" + u.getCardProviderId() + "/wallet");
+		
 		if (conn.getResponseCode() != 200) {
 			
 			br =  new BufferedReader(new InputStreamReader(
@@ -167,7 +179,31 @@ public class BitcoinRestClient {
 			output += jsonTempString;
 		} while (jsonTempString != null);
 		
-		System.out.println("Create wallet output variable is " + output);
+	    JSONObject currentObject = new JSONObject(output);
+	    
+	    JSONObject obj = currentObject.getJSONObject("data");
+	    
+	    System.out.println("Object is " + obj.toString());
+	    
+	    u.setBtcAddress(obj.getString("btc_address"));
+	    u.setBchAddress(obj.getString("bch_address"));
+	    
+	    String userId = getUserId(u.getUsername());
+	    
+		if (dbConn == null)
+			dbConn = DriverManager.getConnection(BitcoinConstants.DB_URL);
+		
+    	PreparedStatement ps = dbConn.prepareStatement("INSERT INTO CARD (BCH_ADDRESS, BTC_ADDRESS, USER_ID) VALUES (?, ?, ?)");
+    	ps.setString(1, u.getBchAddress());
+    	ps.setString(2, u.getBtcAddress());
+    	ps.setInt(3, Integer.parseInt(userId));
+
+    	ps.execute();
+    	ps.close();
+    	LOGGER.info("Updated BCH and BTC addresses.");
+
+		
+	    LOGGER.info("Create wallet output variable is " + output);
 		
 		conn.disconnect();
 		
@@ -181,7 +217,9 @@ public class BitcoinRestClient {
 
 		e.printStackTrace();
 
-	  }
+	  } catch (JSONException e) {
+		e.printStackTrace();
+	}
 	}
 	
 	public void signUpForTernioCard(User u)
@@ -203,7 +241,7 @@ public class BitcoinRestClient {
 	    
 	    DataOutputStream wr = new DataOutputStream(conn.getOutputStream());
 
-			postObj.put("plan", "plastic");
+			postObj.put("plan", "virtual");
 			postObj.put("firstname", u.getFirstName());
 			postObj.put("lastname", u.getLastName());
 			postObj.put("email", u.getEmail());
@@ -215,7 +253,7 @@ public class BitcoinRestClient {
 			postObj.put("country", u.getAddressCountry());
 			postObj.put("phone", u.getPhoneNumber());
 			postObj.put("username", u.getUsername());
-			postObj.put("id1", u.getSocialSecurityNumber());
+			postObj.put("id1", "111111111");
 			postObj.put("id1_type", "ssn");
 			postObj.put("id2", "11111111");
 			postObj.put("id2_type", "drivers_license");
@@ -223,6 +261,8 @@ public class BitcoinRestClient {
 			JSONObject dataObject = new JSONObject();
 			dataObject.putOnce("data", postObj);
 
+			System.out.println("Card object is: \n" + postObj.toString());
+			
 			wr.writeBytes(postObj.toString());
 		    wr.flush();
 		    wr.close();

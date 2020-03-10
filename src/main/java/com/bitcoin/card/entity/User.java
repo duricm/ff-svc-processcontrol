@@ -34,17 +34,31 @@ public class User {
     private String shippingAddressPostalCode;
     private String shippingAddressState;
     private String shippingAddressCountry;
-    private String shippingAddresStreet2;
-
-    
+    private String shippingAddresStreet2;   
     private String defaultCurrencyId;
     private String socialSecurityNumber;
     private String username;
     private String password;
-    
-    
-    
-    public String getShippingAddresStreet2() {
+    private String bchAddress;
+    private String btcAddress;
+       
+    public String getBchAddress() {
+		return bchAddress;
+	}
+
+	public void setBchAddress(String bchAddress) {
+		this.bchAddress = bchAddress;
+	}
+
+	public String getBtcAddress() {
+		return btcAddress;
+	}
+
+	public void setBtcAddress(String btcAddress) {
+		this.btcAddress = btcAddress;
+	}
+
+	public String getShippingAddresStreet2() {
 		return shippingAddresStreet2;
 	}
 
