@@ -9,7 +9,6 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import org.apache.commons.io.IOUtils;
 
 import com.amazonaws.auth.ClasspathPropertiesFileCredentialsProvider;
@@ -47,7 +46,8 @@ import java.util.Optional;
 
 import org.apache.log4j.Logger;
 
-@CrossOrigin(origins = {"http://localhost:3000", "https://card.btctest.net", "https://card.bitcoin.com"}, allowCredentials = "true", 
+@CrossOrigin(origins = {"http://localhost:3000", "https://card.btctest.net", "https://card.bitcoin.com", 
+						"https://card.stage.cloud.bitcoin.com/", "https://card.dev.cloud.bitcoin.com/"}, allowCredentials = "true", 
 methods = {RequestMethod.DELETE, RequestMethod.GET, RequestMethod.POST, RequestMethod.PUT, RequestMethod.OPTIONS})
 @RestController
 public class BitcoinCardController extends BitcoinUtility {
@@ -73,18 +73,18 @@ public class BitcoinCardController extends BitcoinUtility {
     	u.setFirstName("MEHMED");
     	u.setLastName("DURIC");
     	u.setEmail("test10h@yahoo.com");
-    	u.setAddresStreet("111 Clarke Rd");
+    	u.setAddressStreet("111 Clarke Rd");
     	u.setAddressCity("Richmond");
     	u.setAddressState("VA");
     	u.setAddressPostalCode("23233");
     	u.setAddressCountry("US");
-    	u.setPhoneNumber("3108675309");
+    	u.setPhoneNumber("+14834738459");
     	u.setUsername("test10h");
     	u.setSocialSecurityNumber("111111111");
     	u.setDateOfBirth("1969-12-31");
     	
     	try {
-			brClient.createTernioUser(u);
+			brClient.createAPAccount(u);
 		} catch (SQLException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -325,7 +325,7 @@ public class BitcoinCardController extends BitcoinUtility {
     	stmt.setString(6, u.getGender());
     	stmt.setBoolean(7, u.isActive());
     	stmt.setBoolean(8, u.isPromotioanlConsent());
-    	stmt.setString(9, u.getAddresStreet());
+    	stmt.setString(9, u.getAddressStreet());
     	stmt.setString(10, u.getAddressCity());
     	stmt.setString(11, u.getAddressPostalCode());
     	stmt.setString(12, u.getAddressState());
@@ -333,14 +333,14 @@ public class BitcoinCardController extends BitcoinUtility {
     	stmt.setString(14, u.getDefaultCurrencyId());
     	stmt.setString(15, u.getSocialSecurityNumber());
     	stmt.setString(16, u.getUsername());
-    	stmt.setString(17, u.getAddresStreet2());
+    	stmt.setString(17, u.getAddressStreet2());
     	
-    	stmt.setString(18, u.getShippingAddresStreet());
+    	stmt.setString(18, u.getShippingAddressStreet());
     	stmt.setString(19, u.getShippingAddressCity());
     	stmt.setString(20, u.getShippingAddressPostalCode());
     	stmt.setString(21, u.getShippingAddressState());
     	stmt.setString(22, u.getShippingAddressCountry());
-    	stmt.setString(23, u.getShippingAddresStreet2());
+    	stmt.setString(23, u.getShippingAddressStreet2());
     	
     	LOGGER.info("Executing insert statement...");
     	stmt.execute();
@@ -683,7 +683,7 @@ public class BitcoinCardController extends BitcoinUtility {
                 	if (u.getEmail() == null)
                 		throw new BadRequestException(BitcoinConstants.EMAIL_REQUIRED);
                 	else 
-                    	if (u.getAddresStreet() == null)
+                    	if (u.getAddressStreet() == null)
                     		throw new BadRequestException(BitcoinConstants.BILLING_ADDRESS_REQUIRED);
                     	else 
                         	if (u.getAddressCity() == null)
@@ -715,8 +715,8 @@ public class BitcoinCardController extends BitcoinUtility {
 			sql += "date_of_birth = '" + u.getDateOfBirth() + "', ";
 		if (u.getGender() != null)
 			sql += "gender = '" + u.getGender() + "', ";
-		if (u.getAddresStreet() != null)
-			sql += "address_street = '" + u.getAddresStreet() + "', ";
+		if (u.getAddressStreet() != null)
+			sql += "address_street = '" + u.getAddressStreet() + "', ";
 		if (u.getAddressCity() != null)
 			sql += "address_city = '" + u.getAddressCity() + "', ";
 		if (u.getAddressPostalCode() != null)
@@ -729,12 +729,12 @@ public class BitcoinCardController extends BitcoinUtility {
 			sql += "default_currency_id = '" + u.getDefaultCurrencyId() + "', ";
 		if (u.getSocialSecurityNumber() != null)
 			sql += "social_security_number = '" + u.getSocialSecurityNumber() + "', ";
-		if (u.getAddresStreet2() != null)
-			sql += "address_street_2 = '" + u.getAddresStreet2() + "', ";
+		if (u.getAddressStreet2() != null)
+			sql += "address_street_2 = '" + u.getAddressStreet2() + "', ";
 		
 		// Shipping address parameters
-		if (u.getShippingAddresStreet() != null)
-			sql += "shipping_address_street = '" + u.getShippingAddresStreet() + "', ";
+		if (u.getShippingAddressStreet() != null)
+			sql += "shipping_address_street = '" + u.getShippingAddressStreet() + "', ";
 		if (u.getShippingAddressCity() != null)
 			sql += "shipping_address_city = '" + u.getShippingAddressCity() + "', ";
 		if (u.getShippingAddressPostalCode() != null)
@@ -743,8 +743,8 @@ public class BitcoinCardController extends BitcoinUtility {
 			sql += "shipping_address_state = '" + u.getShippingAddressState() + "', ";
 		if (u.getShippingAddressCountry() != null)
 			sql += "shipping_address_country = '" + u.getShippingAddressCountry() + "', ";
-		if (u.getShippingAddresStreet2() != null)
-			sql += "address_street_2 = '" + u.getShippingAddresStreet2() + "', ";
+		if (u.getShippingAddressStreet2() != null)
+			sql += "address_street_2 = '" + u.getShippingAddressStreet2() + "', ";
 		
 		sql += "updated_at= now() where user_name = '" + username + "'";
 		
@@ -805,8 +805,8 @@ public class BitcoinCardController extends BitcoinUtility {
 	    		u.setGender(r.getString("gender"));
 	    		u.setActive(r.getBoolean("is_active"));
 	    		u.setPromotioanlConsent(r.getBoolean("promotional_consent"));
-	    		u.setAddresStreet(r.getString("address_street"));
-	    		u.setAddresStreet2(r.getString("address_street_2"));
+	    		u.setAddressStreet(r.getString("address_street"));
+	    		u.setAddressStreet2(r.getString("address_street_2"));
 	    		u.setAddressCity(r.getString("address_city"));
 	    		u.setAddressPostalCode(r.getString("address_postal_code"));
 	    		u.setAddressState(r.getString("address_state"));
@@ -817,8 +817,8 @@ public class BitcoinCardController extends BitcoinUtility {
 	    		u.setCreatedAt(r.getTimestamp("created_at"));
 	    		u.setUpdatedAt(r.getTimestamp("updated_at"));
 	    		
-	    		u.setShippingAddresStreet(r.getString("shipping_address_street"));
-	    		u.setShippingAddresStreet2(r.getString("shipping_address_street_2"));
+	    		u.setShippingAddressStreet(r.getString("shipping_address_street"));
+	    		u.setShippingAddressStreet2(r.getString("shipping_address_street_2"));
 	    		u.setShippingAddressCity(r.getString("shipping_address_city"));
 	    		u.setShippingAddressPostalCode(r.getString("shipping_address_postal_code"));
 	    		u.setShippingAddressState(r.getString("shipping_address_state"));

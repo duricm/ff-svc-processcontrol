@@ -26,7 +26,247 @@ public class BitcoinRestClient extends BitcoinUtility {
 	
 	private final Logger LOGGER = Logger.getLogger(this.getClass());
 	private String ternioBaseURL = "https://whitelabel.dev.api1.blockcard.ternio.co/v1/user";
+	private String agilePartnersBaseURL = "https://api.sandbox.prysym.com/v1";
+
 	private static Connection dbConn;
+	
+	public void createAPAccount(User u) throws SQLException
+	{
+	  try {
+
+		String output;
+		BufferedReader br = null;
+
+		  // Old test user c7b59df7-c91e-40ed-9021-a6d14a447c9d
+		URL url = new URL(agilePartnersBaseURL + "/accounts/create");
+		HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+		conn.setRequestMethod("POST");
+		conn.setRequestProperty("Content-Type", "application/json");
+		conn.setRequestProperty("Authorization", "Bearer sk_test_tyZEMb7u1HkdqV7XD4Epu2XN8hsbYrmd");
+		conn.setDoOutput(true);
+		
+	    JSONObject dataObj = new JSONObject();
+	    JSONObject accountHolderObj = new JSONObject();
+	    JSONObject billingObj = new JSONObject();
+	    JSONObject addressObj = new JSONObject();
+	    JSONObject documentsObj = new JSONObject();
+	    JSONObject proofOfIdentityObj = new JSONObject();
+	    	    
+	    DataOutputStream wr = new DataOutputStream(conn.getOutputStream());
+	    
+	    dataObj.put("program_id", BitcoinConstants.AP_PROGRAM_ID);
+	    dataObj.put("currency_code", BitcoinConstants.AP_CURRENCY_CODE);
+
+	    accountHolderObj.put("country_code", u.getAddressCountry());
+	    accountHolderObj.put("legal_entity_type", "INDIVIDUAL");  
+	    accountHolderObj.put("first_name", u.getFirstName());
+	    accountHolderObj.put("last_name", u.getLastName());
+	    accountHolderObj.put("birth_date", u.getDateOfBirth());
+	    accountHolderObj.put("email", u.getEmail());
+	    accountHolderObj.put("phone", u.getPhoneNumber());
+
+	    addressObj.put("country_code", u.getAddressCountry());
+	    addressObj.put("country_subdivision_code", u.getAddressCountry() + "-" + u.getAddressState());
+	    addressObj.put("city", u.getAddressCity());
+	    addressObj.put("postal_code", u.getAddressPostalCode());
+	    addressObj.put("line1", u.getAddressCity());
+	    //billingObj.put("username", u.getUsername());
+	    
+	    proofOfIdentityObj.put("type", u.getAddressCity());
+	    proofOfIdentityObj.put("front_side", "0170d50b-087c-c044-ae20-d647b9f4ef77");
+	    proofOfIdentityObj.put("back_side", "0170d50b-087c-c044-ae20-d647b9f4ef77");
+	    proofOfIdentityObj.put("live_photo", "0170d50b-087c-c044-ae20-d647b9f4ef77");
+	    
+	    documentsObj.put("proof_of_identity", proofOfIdentityObj);
+
+	    billingObj.put("address", addressObj);
+
+	    accountHolderObj.put("billing", billingObj);
+	    accountHolderObj.put("documents", documentsObj);
+	    dataObj.put("account_holder", accountHolderObj);
+			
+			System.out.println(dataObj.toString());
+
+			wr.writeBytes(dataObj.toString());
+		    wr.flush();
+		    wr.close();
+
+		if (conn.getResponseCode() != 200) {
+			
+			br =  new BufferedReader(new InputStreamReader(
+					(conn.getErrorStream())));
+				
+				while ((output = br.readLine()) != null) {
+					LOGGER.info(output);
+				}
+			
+			
+			throw new RuntimeException("Failed : HTTP error code : "
+					+ conn.getResponseCode());
+		}
+						
+		LOGGER.info("Response code is: " + conn.getResponseCode());
+		
+		LOGGER.info("Response message is: " + conn.getResponseMessage());
+
+		br =  new BufferedReader(new InputStreamReader(
+			(conn.getInputStream())));
+		
+
+		String jsonTempString = null;
+		output = "";
+		
+		do {
+			jsonTempString = br.readLine();
+			output += jsonTempString;
+			LOGGER.info("Output object: " + jsonTempString);
+		} while (jsonTempString != null);
+		
+	    JSONObject currentObject = new JSONObject(output);
+	    
+	    JSONObject obj = currentObject.getJSONObject("data");
+	    
+	    LOGGER.info("Object is " + obj.toString());
+	    
+	    u.setCardProviderId(obj.getString("id"));
+	    createAPCard(u);
+	    	    		
+		conn.disconnect();
+		
+		if (dbConn == null)
+			dbConn = DriverManager.getConnection(BitcoinConstants.DB_URL);
+    	        
+    	PreparedStatement ps = dbConn.prepareStatement("UPDATE USERS SET CARD_PROVIDER_ID = ? WHERE USER_NAME = ?");
+    	ps.setString(1, u.getCardProviderId());
+    	ps.setString(2, u.getUsername());
+
+    	ps.execute();
+    	ps.close();
+    	LOGGER.info("Updated card provider id.");
+
+	  } catch (MalformedURLException e) {
+
+		e.printStackTrace();
+
+	  } catch (IOException e) {
+
+		e.printStackTrace();
+
+	  }
+	  catch (JSONException e) {
+		e.printStackTrace();
+	}
+	}
+	
+	public void createAPCard(User u) throws SQLException
+	{
+	  try {
+
+		String output;
+		BufferedReader br = null;
+
+		  // Old test user c7b59df7-c91e-40ed-9021-a6d14a447c9d
+		URL url = new URL(agilePartnersBaseURL + "/cards/create");
+		HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+		conn.setRequestMethod("POST");
+		conn.setRequestProperty("Content-Type", "application/json");
+		conn.setRequestProperty("Authorization", "Bearer sk_test_tyZEMb7u1HkdqV7XD4Epu2XN8hsbYrmd");
+		conn.setDoOutput(true);
+		
+	    JSONObject dataObj = new JSONObject();
+	    JSONObject shippingObj = new JSONObject();
+	    JSONObject addressObj = new JSONObject();
+	    	    
+	    DataOutputStream wr = new DataOutputStream(conn.getOutputStream());
+	    
+	    dataObj.put("program_id", BitcoinConstants.AP_PROGRAM_ID);
+	    dataObj.put("account_id", u.getCardProviderId());
+	    dataObj.put("currency_code", BitcoinConstants.AP_CURRENCY_CODE);
+	    dataObj.put("design_id", BitcoinConstants.AP_DESIGN_ID);
+	    dataObj.put("type", BitcoinConstants.AP_CARD_TYPE);
+
+	    addressObj.put("country_code", u.getAddressCountry());
+	    addressObj.put("country_subdivision_code", u.getAddressCountry() + "-" + u.getAddressState());
+	    addressObj.put("city", u.getAddressCity());
+	    addressObj.put("postal_code", u.getAddressPostalCode());
+	    addressObj.put("line1", u.getAddressCity());
+	    //billingObj.put("username", u.getUsername());
+
+	    shippingObj.put("address", addressObj);
+
+	    dataObj.put("shipping", shippingObj);
+			
+		System.out.println(dataObj.toString());
+
+		wr.writeBytes(dataObj.toString());
+		   wr.flush();
+		   wr.close();
+
+		if (conn.getResponseCode() != 200) {
+			
+			br =  new BufferedReader(new InputStreamReader(
+					(conn.getErrorStream())));
+				
+				while ((output = br.readLine()) != null) {
+					LOGGER.info(output);
+				}
+			
+			throw new RuntimeException("Failed : HTTP error code : "
+					+ conn.getResponseCode());
+		}
+						
+		LOGGER.info("Response code is: " + conn.getResponseCode());
+		
+		LOGGER.info("Response message is: " + conn.getResponseMessage());
+
+		br =  new BufferedReader(new InputStreamReader(
+			(conn.getInputStream())));
+		
+
+		String jsonTempString = null;
+		output = "";
+		
+		do {
+			jsonTempString = br.readLine();
+			output += jsonTempString;
+			LOGGER.info("Output object: " + jsonTempString);
+		} while (jsonTempString != null);
+		
+	    JSONObject currentObject = new JSONObject(output);
+	    
+	    JSONObject obj = currentObject.getJSONObject("data");
+	    
+	    LOGGER.info("Object is " + obj.toString());
+	    
+	    u.setCardProviderId(obj.getString("id"));
+	    // createTernioWallet(u);
+	    	    		
+		conn.disconnect();
+		
+		if (dbConn == null)
+			dbConn = DriverManager.getConnection(BitcoinConstants.DB_URL);
+    	        
+    	PreparedStatement ps = dbConn.prepareStatement("UPDATE USERS SET CARD_PROVIDER_ID = ? WHERE USER_NAME = ?");
+    	ps.setString(1, u.getCardProviderId());
+    	ps.setString(2, u.getUsername());
+
+    	ps.execute();
+    	ps.close();
+    	LOGGER.info("Updated card provider id.");
+
+	  } catch (MalformedURLException e) {
+
+		e.printStackTrace();
+
+	  } catch (IOException e) {
+
+		e.printStackTrace();
+
+	  }
+	  catch (JSONException e) {
+		e.printStackTrace();
+	}
+	}
 	
 	public void createTernioUser(User u) throws SQLException
 	{
@@ -57,9 +297,6 @@ public class BitcoinRestClient extends BitcoinUtility {
 			postObj.put("country", u.getAddressCountry());
 			postObj.put("phone", u.getPhoneNumber());
 			postObj.put("username", u.getUsername());
-			
-			JSONObject dataObject = new JSONObject();
-			dataObject.putOnce("data", postObj);
 			
 			System.out.println(postObj.toString());
 

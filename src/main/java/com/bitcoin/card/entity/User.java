@@ -21,20 +21,20 @@ public class User {
     private String gender;
     private boolean isActive;
     private boolean promotioanlConsent;
-    private String addresStreet;
+    private String addressStreet;
 	private String addressCity;
     private String addressPostalCode;
     private String addressState;
     private String addressCountry;
 	private String cardProviderId;
-    private String addresStreet2;
+    private String addressStreet2;
     
-    private String shippingAddresStreet;
+    private String shippingAddressStreet;
 	private String shippingAddressCity;
     private String shippingAddressPostalCode;
     private String shippingAddressState;
     private String shippingAddressCountry;
-    private String shippingAddresStreet2;   
+    private String shippingAddressStreet2;   
     private String defaultCurrencyId;
     private String socialSecurityNumber;
     private String username;
@@ -58,20 +58,20 @@ public class User {
 		this.btcAddress = btcAddress;
 	}
 
-	public String getShippingAddresStreet2() {
-		return shippingAddresStreet2;
+	public String getShippingAddressStreet() {
+		return shippingAddressStreet;
 	}
 
-	public void setShippingAddresStreet2(String shippingAddresStreet2) {
-		this.shippingAddresStreet2 = shippingAddresStreet2;
+	public void setShippingAddressStreet(String shippingAddressStreet) {
+		this.shippingAddressStreet = shippingAddressStreet;
 	}
 
-	public String getShippingAddresStreet() {
-		return shippingAddresStreet;
+	public String getShippingAddressStreet2() {
+		return shippingAddressStreet2;
 	}
 
-	public void setShippingAddresStreet(String shippingAddresStreet) {
-		this.shippingAddresStreet = shippingAddresStreet;
+	public void setShippingAddressStreet2(String shippingAddressStreet2) {
+		this.shippingAddressStreet2 = shippingAddressStreet2;
 	}
 
 	public String getShippingAddressCity() {
@@ -113,13 +113,13 @@ public class User {
 	public void setPassword(String password) {
 		this.password = password;
 	}
-    
-    public String getAddresStreet2() {
-		return addresStreet2;
+	
+	public String getAddressStreet2() {
+		return addressStreet2;
 	}
 
-	public void setAddresStreet2(String addressStreet2) {
-		this.addresStreet2 = addressStreet2;
+	public void setAddressStreet2(String addressStreet2) {
+		this.addressStreet2 = addressStreet2;
 	}
 
 	public String getUsername() {
@@ -202,12 +202,12 @@ public class User {
 		this.promotioanlConsent = promotioanlConsent;
 	}
 
-	public String getAddresStreet() {
-		return addresStreet;
+	public String getAddressStreet() {
+		return addressStreet;
 	}
 
-	public void setAddresStreet(String addresStreet) {
-		this.addresStreet = addresStreet;
+	public void setAddressStreet(String addressStreet) {
+		this.addressStreet = addressStreet;
 	}
 
 	public String getAddressCity() {

@@ -27,5 +27,12 @@ public class BitcoinConstants {
     
     public static final String UNIQUE_EMAIL = "This email is already associated with a Bitcoin.com account. Please use a different email address.";
     public static final String UNIQUE_USER_NAME = "This username already exists. Try another.";
+    
+    public static final String AP_PROGRAM_ID = "c6833dd5-625b-4690-8861-de6077cd74b4";
+    public static final String AP_CURRENCY_CODE = "USD";
+    public static final String AP_DESIGN_ID = "8f880b0d-0a29-4ea2-b02f-7bd79522cb73";
+    public static final String AP_CARD_TYPE = "PHYSICAL";
+    
+
 
 }
