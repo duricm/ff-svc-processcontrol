@@ -353,7 +353,7 @@ public class BitcoinRestClient extends BitcoinUtility {
     	ps.setString(1, u.getCardProviderId());
     	ps.setString(2, u.getUsername());
 
-    	ps.execute();
+    	ps.executeUpdate();
     	ps.close();
     	LOGGER.info("Updated card provider id.");
 
@@ -430,7 +430,7 @@ public class BitcoinRestClient extends BitcoinUtility {
 		if (dbConn == null)
 			dbConn = DriverManager.getConnection(BitcoinConstants.DB_URL);
 		
-    	PreparedStatement ps = dbConn.prepareStatement("INSERT INTO CARD (BCH_ADDRESS, BTC_ADDRESS, USER_ID) VALUES (?, ?, ?)");
+    	PreparedStatement ps = dbConn.prepareStatement("INSERT INTO CARD (CARD_PROVIDER, BCH_ADDRESS, BTC_ADDRESS, USER_ID) VALUES ('TERNIO', ?, ?, ?)");
     	ps.setString(1, u.getBchAddress());
     	ps.setString(2, u.getBtcAddress());
     	ps.setInt(3, Integer.parseInt(userId));
@@ -459,7 +459,7 @@ public class BitcoinRestClient extends BitcoinUtility {
 	}
 	}
 	
-	public void signUpForTernioCard(User u)
+	public void signUpForTernioCard(User u) throws SQLException
 	{
 	  try {
 
@@ -545,7 +545,18 @@ public class BitcoinRestClient extends BitcoinUtility {
 	    JSONObject obj = currentObject.getJSONObject("data");
 	    
 	    System.out.println("Object is " + obj.toString());
-	    	    	    	    		
+	    
+		if (dbConn == null)
+			dbConn = DriverManager.getConnection(BitcoinConstants.DB_URL);
+    	        
+    	PreparedStatement ps = dbConn.prepareStatement("UPDATE CARD SET KYC_APPROVED = ? WHERE USER_ID = ?");
+    	ps.setString(1, obj.getString("kyc_approved"));
+    	ps.setString(2, u.getId().toString());
+
+    	ps.executeUpdate();
+    	ps.close();
+    	LOGGER.info("Updated KYC response.");
+
 		conn.disconnect();
 
 	  } catch (MalformedURLException e) {

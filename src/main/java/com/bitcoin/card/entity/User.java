@@ -41,8 +41,18 @@ public class User {
     private String password;
     private String bchAddress;
     private String btcAddress;
+    
+    private boolean debitCard;
        
-    public String getBchAddress() {
+    public boolean isDebitCard() {
+		return debitCard;
+	}
+
+	public void setDebitCard(boolean debitCard) {
+		this.debitCard = debitCard;
+	}
+
+	public String getBchAddress() {
 		return bchAddress;
 	}
 

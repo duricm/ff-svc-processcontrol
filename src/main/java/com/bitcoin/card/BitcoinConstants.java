@@ -10,6 +10,7 @@ public class BitcoinConstants {
     static String PASSWORD_REQUIRED = "Password required";
     
     static String VERIFY_CODE_REQUIRED = "Please enter code provided in email";
+    static String WRONG_CODE = "Wrong code, please try again";
     
     static String FIRST_NAME_REQUIRED = "Given name required";
     static String LAST_NAME_REQUIRED = "Family name required";
@@ -19,7 +20,7 @@ public class BitcoinConstants {
     static String CITY_REQUIRED = "City required";
     static String STATE_REQUIRED = "State required";
     static String COUNTRY_REQUIRED = "Country required";
-    static String POSTAL_CODE_REQUIRED = "Address required";
+    static String POSTAL_CODE_REQUIRED = "Postal code required";
     
     static String USERNAME_OR_EMAIL_REQUIRED = "Username or email required";
     

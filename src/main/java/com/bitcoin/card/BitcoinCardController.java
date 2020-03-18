@@ -281,10 +281,16 @@ public class BitcoinCardController extends BitcoinUtility {
     {
     	boolean result;
     	
+    	if (v.getUsername() == null)
+    		throw new BadRequestException(BitcoinConstants.USER_NAME_REQUIRED);
+    	else 
+        	if (v.getCode() == null)
+        		throw new BadRequestException(BitcoinConstants.VERIFY_CODE_REQUIRED);
+    	
     	result = helper.verifyAccessCode(v.getUsername(), v.getCode());
     	
     	if (! result)
-    		throw new UnauthorizedException("Failed to verify access code: " + v.getCode());
+    		throw new UnauthorizedException(BitcoinConstants.WRONG_CODE);
     	
     		
     	return result;
@@ -359,10 +365,6 @@ public class BitcoinCardController extends BitcoinUtility {
 		    throw new SQLException("Failed to create Cognito user + " + u.getUsername());
     	}
     	
-    	if (u.getAddressCountry().equals("US"))
-        	brClient.createTernioUser(u);
-
-    		
 
     }
     
@@ -530,7 +532,7 @@ public class BitcoinCardController extends BitcoinUtility {
     }
     
     @GetMapping(value = "/virtual-card", produces = MediaType.IMAGE_JPEG_VALUE)
-    public @ResponseBody byte[]  getVirtualCardImage(@PathVariable int id, @RequestHeader(name = "authorization") Optional<String> authorization) throws Exception {
+    public @ResponseBody byte[]  getVirtualCardImage(@RequestHeader(name = "authorization") Optional<String> authorization) throws Exception {
     	
     	
     	LOGGER.info("Retrieving user virtual card for user ");
@@ -671,6 +673,7 @@ public class BitcoinCardController extends BitcoinUtility {
 
     	LOGGER.info("User data: \n" + u.toString());
     	
+    	if (u.isDebitCard())
     	if (u.getFirstName() == null)
     		throw new BadRequestException(BitcoinConstants.FIRST_NAME_REQUIRED);
     	else 
@@ -756,8 +759,12 @@ public class BitcoinCardController extends BitcoinUtility {
 			throw new UserNotFoundException(u.getId().toString());
 		
     	try {
-			brClient.createTernioUser(u);
-		} catch (SQLException e) {
+    		
+    		// Check if we need to create card provider
+    		if (u.isDebitCard())
+    			brClient.createTernioUser(u);
+		
+    	} catch (SQLException e) {
 			e.printStackTrace();
 		}
 		
