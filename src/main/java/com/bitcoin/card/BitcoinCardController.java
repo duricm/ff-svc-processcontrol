@@ -747,7 +747,7 @@ public class BitcoinCardController extends BitcoinUtility {
 		if (u.getShippingAddressCountry() != null)
 			sql += "shipping_address_country = '" + u.getShippingAddressCountry() + "', ";
 		if (u.getShippingAddressStreet2() != null)
-			sql += "address_street_2 = '" + u.getShippingAddressStreet2() + "', ";
+			sql += "shipping_address_street_2 = '" + u.getShippingAddressStreet2() + "', ";
 		
 		sql += "updated_at= now() where user_name = '" + username + "'";
 		
