@@ -26,7 +26,6 @@ public class User {
     private String addressPostalCode;
     private String addressState;
     private String addressCountry;
-	private String cardProviderId;
     private String addressStreet2;
     
     private String shippingAddressStreet;
@@ -280,8 +279,6 @@ public class User {
     public User() {
     }
 
-
-
     public Long getId() {
         return id;
     }
@@ -289,14 +286,5 @@ public class User {
     public void setId(Long id) {
         this.id = id;
     }
-
-    
-    public String getCardProviderId() {
-		return cardProviderId;
-	}
-
-	public void setCardProviderId(String cardProviderId) {
-		this.cardProviderId = cardProviderId;
-	}
 
 }

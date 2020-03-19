@@ -17,6 +17,7 @@ import com.amazonaws.services.cognitoidp.AWSCognitoIdentityProviderClientBuilder
 import com.amazonaws.services.cognitoidp.model.AdminGetUserRequest;
 import com.amazonaws.services.cognitoidp.model.AdminGetUserResult;
 import com.bitcoin.card.entity.AccessToken;
+import com.bitcoin.card.entity.Card;
 import com.bitcoin.card.entity.Login;
 import com.bitcoin.card.entity.ResponseMessage;
 import com.bitcoin.card.entity.UpdatePassword;
@@ -555,6 +556,44 @@ public class BitcoinCardController extends BitcoinUtility {
     
     // Find
     @ResponseStatus(HttpStatus.OK)
+    @GetMapping("/users/card")
+    Card findCardDetails(@RequestHeader(name = "authorization") Optional<String> authorization) {
+   
+    	String username = th.decodeVerifyCognitoToken(authorization);
+
+    	LOGGER.info("Getting card details for " + username);
+    	
+    	Card c = new Card();
+    	
+    	try {
+    		if (conn == null)
+    			conn = DriverManager.getConnection(BitcoinConstants.DB_URL);
+    		
+    		String userId = getUserId(username);
+    		
+        	PreparedStatement stmt = conn.prepareStatement("select * from card where user_id = ?");  
+        	stmt.setLong(1, Long.parseLong(userId));
+        	ResultSet r = stmt.executeQuery();
+    		    		
+
+    		
+    		setCardResultParameters(r, c, username);
+
+    		    		
+    	} catch (SQLException e) {
+    		
+	    	LOGGER.info("Exception!!!\n" + e.getMessage());
+
+    		e.printStackTrace();
+    	}
+    	
+    	LOGGER.info("Retrieved user data: \n" + c.toString());
+    	
+         return c;
+    }
+    
+    // Find
+    @ResponseStatus(HttpStatus.OK)
     @GetMapping("/users/me")
     User findMyUserInfo(@RequestHeader(name = "authorization") Optional<String> authorization) {
    
@@ -793,6 +832,32 @@ public class BitcoinCardController extends BitcoinUtility {
     			
         	LOGGER.info("Deleted user: " + username);
         
+    }
+    
+    private void setCardResultParameters(ResultSet r, Card c, String userIdentifier)
+    {
+		try {
+			
+	    	if (r.next() == false)
+	    		throw new UserNotFoundException(userIdentifier);
+	    	else
+	    	{
+
+	    		c.setBchAddress(r.getString("bch_address"));
+	    		c.setBtcAddress(r.getString("btc_address"));
+	    		c.setCardProvider(r.getString("card_provider"));
+	    		c.setCardProviderId(r.getString("card_provider_id"));
+	    		c.setKycApproved(r.getBoolean("kyc_approved"));
+	    		c.setCardCreated(r.getBoolean("card_created"));
+
+	    	}
+		} catch (SQLException e) {
+			
+	    	LOGGER.info("Exception!!!\n" + e.getMessage());
+
+			e.printStackTrace();
+		}
+    	
     }
     
     private void setUserResultParameters(ResultSet r, User u, String userIdentifier)
