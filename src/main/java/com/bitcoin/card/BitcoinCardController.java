@@ -574,8 +574,6 @@ public class BitcoinCardController extends BitcoinUtility {
         	PreparedStatement stmt = conn.prepareStatement("select * from card where user_id = ?");  
         	stmt.setLong(1, Long.parseLong(userId));
         	ResultSet r = stmt.executeQuery();
-    		    		
-
     		
     		setCardResultParameters(r, c, username);
 
@@ -838,9 +836,7 @@ public class BitcoinCardController extends BitcoinUtility {
     {
 		try {
 			
-	    	if (r.next() == false)
-	    		throw new UserNotFoundException(userIdentifier);
-	    	else
+	    	if (r.next())
 	    	{
 
 	    		c.setBchAddress(r.getString("bch_address"));
