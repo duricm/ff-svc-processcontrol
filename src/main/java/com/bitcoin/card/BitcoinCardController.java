@@ -84,13 +84,13 @@ public class BitcoinCardController extends BitcoinUtility {
     	u.setSocialSecurityNumber("111111111");
     	u.setDateOfBirth("1969-12-31");
     	
-    	try {
+    /*	try {
 			brClient.createAPAccount(u);
 		} catch (SQLException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-	
+	*/
     	
     	return "Test endpoint Mehmed Duric.";
     }
