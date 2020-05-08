@@ -74,7 +74,29 @@ public class FFController {
     	
     	return cList;
     }
-    
+
+    @DeleteMapping(value = "/deleterow/{sheetId}/{rowNumber}", consumes = "*/*")
+    @ResponseStatus(HttpStatus.OK)
+    public List<FFRow> deleteRow(@PathVariable final String sheetId, @PathVariable final String rowNumber) throws Exception {
+
+    	String connectionStr = "jdbc:sqlserver://cfwsql2k14.cloudapp.net:1433;"
+             + "database=CFW.SPREADSHEET;"
+             + "user=mduric;"
+             + "password=mehmed2208;";
+	
+    	if (conn == null)
+    		conn = DriverManager.getConnection(connectionStr);
+	
+    	PreparedStatement stmt = conn.prepareStatement("UPDATE SPREADSHEET_DATA SET SHEET_ROW_ACTIVE = 0 WHERE SHEET_ID = ? AND SHEET_ROW_NUMBER = ?");  
+    	stmt.setString(1, sheetId);
+    	stmt.setString(2, rowNumber);
+
+    	int r = stmt.executeUpdate();
+    	
+    	return getRowsInternally(sheetId, true);
+	
+    }
+
 
     @PostMapping(value = "/addrow", consumes = "*/*")
     @ResponseStatus(HttpStatus.CREATED)
@@ -178,253 +200,66 @@ public class FFController {
     	
     	
     	Statement s = conn.createStatement();
-    	ResultSet r = s.executeQuery("select * from SPREADSHEET_DATA sd, CONFIG_COLUMNS cc, CONFIG_NAME cn where cn.CONFIG_" + sheetCondition + " = '" + sheet + "' AND sd.SHEET_ID = cn.CONFIG_ID and sd.SHEET_COLUMN_NAME = cc.COLUMN_NAME and sd.SHEET_ID = cc.CONFIG_ID order by sheet_row_number, cc.COLUMN_ORDER");
+    	ResultSet r = s.executeQuery("select * from SPREADSHEET_DATA sd, CONFIG_COLUMNS cc, CONFIG_NAME cn where cn.CONFIG_" + sheetCondition + " = '" + sheet + "' AND sd.SHEET_ID = cn.CONFIG_ID and sd.SHEET_COLUMN_NAME = cc.COLUMN_NAME and sd.SHEET_ID = cc.CONFIG_ID and sd.SHEET_ROW_ACTIVE = 1 order by sheet_row_number, cc.COLUMN_ORDER");
     	
     	
-    	int rowNumber = 0, previousRowNumber = 0;
-        String columnName;
-        String cellValue;
+    	int rowNumber = 0, previousRowNumber = 0, isActive = 0;
         
     	FFRow row = new FFRow();
+    	
+    	
         
     	List<FFRow> rList = new ArrayList<FFRow>();
     	List<String> rowList = new ArrayList<>();
+    	
+    	// Used if first row is not zero so that first empty row is not added in else statement. 
+    	// previouwRowNumber = 0 assumes first row will be zero, if not, it means first row is not active
+    	// and we need this variable to to add first empty row
+    	boolean firstRun = true;
        
     	while (r.next())
     	{
-    		System.out.println("Row number is: " + r.getInt("SHEET_ROW_NUMBER") + " previous row number: " + previousRowNumber +  
-    				" cell value : " + r.getString("SHEET_CELL_VALUE"));
     		rowNumber = r.getInt("SHEET_ROW_NUMBER");
-    	
+    		isActive = r.getInt("SHEET_ROW_ACTIVE");
+    		    		    	
     		if(rowNumber == previousRowNumber)
     		{
-    			System.out.println("Adding cell value row equal: " + r.getString("SHEET_CELL_VALUE"));
+    			firstRun = false;
     			rowList.add(r.getString("SHEET_CELL_VALUE"));
+    			row.setRowNumber(rowNumber);
+    			row.setIsActive(isActive);
     		}
     		else
     		{
     			//Add row to the row list
     			previousRowNumber = rowNumber;
-    			row.setRow(rowList);
-    			rList.add(row);
+
+    			if (!firstRun)
+    			{	
+    				row.setRow(rowList);
+    				rList.add(row);
+    			}
+    			else
+    				firstRun = false;
     			
     			//Reset row objects for new row
     			row = new FFRow();
     			rowList = new ArrayList<>();
     			rowList.add(r.getString("SHEET_CELL_VALUE"));
-    			System.out.println("Adding cell value row NOT equal: " + r.getString("SHEET_CELL_VALUE"));
-
-
     		
     		}		
 
         }
+    	
     	// Adding last row after while loop exited
+    	System.out.println("Adding last row: " + rowNumber);
+    	row.setRowNumber(rowNumber);
+		row.setIsActive(isActive);
     	row.setRow(rowList);
     	rList.add(row);	
     		
         	
-        	return rList;
+        return rList;
     }
-    // Save
-    @PostMapping(value = "/users", consumes = "*/*")
-    @ResponseStatus(HttpStatus.CREATED)
-    void newUser(@RequestBody User u, @RequestHeader(name = "authorization") Optional<String> authorization) throws SQLException {
-    	String sql = "insert into users (first_name, last_name, email, phone_number, date_of_birth, gender, is_active, promotional_consent" +
-    	", address_street, address_city, address_postal_code, address_state, address_country, default_currency_id, social_security_number" +
-    			", user_name, address_street_2, shipping_address_street, shipping_address_city, shipping_address_postal_code, shipping_address_state, " + 
-    	"shipping_address_country, shipping_address_street_2, created_at, updated_at) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, now(), now())";
-    	    	
-    	LOGGER.info("Adding new user to database...");
-    	LOGGER.info("User data: \n" + u.toString());
-    	
-
-
-    	//String username = th.decodeVerifyCognitoToken(authorization);
-    	
-		if (conn == null)
-			conn = DriverManager.getConnection("jdbc:sqlserver://localhost\\\\sqlexpress;user=sa;password=secret");
-		
-    	PreparedStatement stmt = conn.prepareStatement(sql);  
-    	stmt.setString(1,u.getFirstName());
-    	stmt.setString(2,u.getLastName());
-    	stmt.setString(3, u.getEmail());
-    	stmt.setString(4, u.getPhoneNumber());
-    	stmt.setString(5, u.getDateOfBirth());
-    	stmt.setString(6, u.getGender());
-    	stmt.setBoolean(7, u.isActive());
-    	stmt.setBoolean(8, u.isPromotioanlConsent());
-    	stmt.setString(9, u.getAddressStreet());
-    	stmt.setString(10, u.getAddressCity());
-    	stmt.setString(11, u.getAddressPostalCode());
-    	stmt.setString(12, u.getAddressState());
-    	stmt.setString(13, u.getAddressCountry());
-    	stmt.setString(14, u.getDefaultCurrencyId());
-    	stmt.setString(15, u.getSocialSecurityNumber());
-    	stmt.setString(16, u.getUsername());
-    	stmt.setString(17, u.getAddressStreet2());
-    	
-    	stmt.setString(18, u.getShippingAddressStreet());
-    	stmt.setString(19, u.getShippingAddressCity());
-    	stmt.setString(20, u.getShippingAddressPostalCode());
-    	stmt.setString(21, u.getShippingAddressState());
-    	stmt.setString(22, u.getShippingAddressCountry());
-    	stmt.setString(23, u.getShippingAddressStreet2());
-    	
-    	LOGGER.info("Executing insert statement...");
-    	stmt.execute();
-    	LOGGER.info("Inserted new user in database.");
-
-    }
-    
-    /*
-    @GetMapping("/get-text")
-    public @ResponseBody String getText() throws Exception {
-    	
-		if (conn == null)
-			conn = DriverManager.getConnection(url);
-    	
-        final InputStream in = getClass().getResourceAsStream("/card.jpg");
-
-    	PreparedStatement ps = conn.prepareStatement("INSERT INTO user_documents (user_id, document) VALUES (?, ?)");
-    	ps.setInt(1, 2);
-    	ps.setBinaryStream(2, in);
-    	ps.execute();
-    	ps.close();
-
-    	return "Hello world";
-    }
-
-    
-    @GetMapping("/get-image")
-    public @ResponseBody byte[] getImage() throws IOException {
-        final InputStream in = getClass().getResourceAsStream("/card.jpg");
-
-        return IOUtils.toByteArray(in);
-    }
-
-    @GetMapping(value = "/get-image-with-media-type", produces = MediaType.IMAGE_JPEG_VALUE)
-    public @ResponseBody byte[] getImageWithMediaType() throws IOException {
-        final InputStream in = getClass().getResourceAsStream("/card.jpg");
-        return IOUtils.toByteArray(in);
-    }
-*/
-    
-    @GetMapping(value = "/get-file", produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
-    public @ResponseBody byte[] getFile() throws IOException {
-    	System.out.println("MEHMED getting file...");
-    	
-    	File f = new File("/db_backup.sh");
-        System.out.println("File path: " + f.getAbsolutePath());
-    	
-        final InputStream in = getClass().getResourceAsStream("C:\\projects\\bitcoincom-svc-cardapi\\db_backup.sh");
-        
-        System.out.println("Input stream is " + in);
-        return IOUtils.toByteArray(in);
-    }
-    
-     // Find
-    @ResponseStatus(HttpStatus.OK)
-    @GetMapping("/users/me")
-    User findMyUserInfo(@RequestHeader(name = "authorization") Optional<String> authorization) {
-    	
-    	User u = new User();
-    	
-    	try {
-    		if (conn == null)
-    			conn = DriverManager.getConnection("");
-    		    		
-    		Statement s = conn.createStatement();
-    		ResultSet r = s.executeQuery("select * from users where user_name = '" );
-    		
-
-
-    		    		
-    	} catch (SQLException e) {
-    		
-	    	LOGGER.info("Exception!!!\n" + e.getMessage());
-
-    		e.printStackTrace();
-    	}
-    	
-    	LOGGER.info("Retrieved user data: \n" + u.toString());
-    	
-         return u;
-    }
-    
  
-    // Save or update
-    @ResponseStatus(HttpStatus.OK)
-    @PutMapping(value = "/users/me", consumes = "*/*")
-    void updateUser(@RequestBody User u, @RequestHeader(name = "authorization") Optional<String> authorization) throws SQLException {
- 
-    	LOGGER.info("User data: \n" + u.toString());
-    	
-
-    	String sql = "update users set ";
- 
-		if (conn == null)
-			conn = DriverManager.getConnection("");
-		
-		if (u.getFirstName() != null)
-			sql += "first_name = '" + u.getFirstName() + "', ";
-		if (u.getLastName() != null)
-			sql += "last_name = '" + u.getLastName() + "', ";
-		if (u.getEmail() != null)
-			sql += "email = '" + u.getEmail() + "', ";
-		if (u.getPhoneNumber() != null)
-			sql += "phone_number = '" + u.getPhoneNumber() + "', ";
-		if (u.getDateOfBirth() != null)
-			sql += "date_of_birth = '" + u.getDateOfBirth() + "', ";
-		if (u.getGender() != null)
-			sql += "gender = '" + u.getGender() + "', ";
-		if (u.getAddressStreet() != null)
-			sql += "address_street = '" + u.getAddressStreet() + "', ";
-		if (u.getAddressCity() != null)
-			sql += "address_city = '" + u.getAddressCity() + "', ";
-		if (u.getAddressPostalCode() != null)
-			sql += "address_postal_code = '" + u.getAddressPostalCode() + "', ";
-		if (u.getAddressState() != null)
-			sql += "address_state = '" + u.getAddressState() + "', ";
-		if (u.getAddressCountry() != null)
-			sql += "address_country = '" + u.getAddressCountry() + "', ";
-		if (u.getDefaultCurrencyId() != null)
-			sql += "default_currency_id = '" + u.getDefaultCurrencyId() + "', ";
-		if (u.getSocialSecurityNumber() != null)
-			sql += "social_security_number = '" + u.getSocialSecurityNumber() + "', ";
-		if (u.getAddressStreet2() != null)
-			sql += "address_street_2 = '" + u.getAddressStreet2() + "', ";
-		
-		// Shipping address parameters
-		if (u.getShippingAddressStreet() != null)
-			sql += "shipping_address_street = '" + u.getShippingAddressStreet() + "', ";
-		if (u.getShippingAddressCity() != null)
-			sql += "shipping_address_city = '" + u.getShippingAddressCity() + "', ";
-		if (u.getShippingAddressPostalCode() != null)
-			sql += "shipping_address_postal_code = '" + u.getShippingAddressPostalCode() + "', ";
-		if (u.getShippingAddressState() != null)
-			sql += "shipping_address_state = '" + u.getShippingAddressState() + "', ";
-		if (u.getShippingAddressCountry() != null)
-			sql += "shipping_address_country = '" + u.getShippingAddressCountry() + "', ";
-		if (u.getShippingAddressStreet2() != null)
-			sql += "shipping_address_street_2 = '" + u.getShippingAddressStreet2() + "', ";
-		
-		sql += "updated_at= now() where user_name = '";
-		
-		Statement s = conn.createStatement();
-		
-		int result = s.executeUpdate(sql);
-		
-		if (result == 0)
-			throw new UserNotFoundException(u.getId().toString());
-		
-    }
-
-    @DeleteMapping("/users/me")
-    void deleteUser(@RequestHeader(name = "authorization") Optional<String> authorization) throws SQLException {
-
-
-    }
-    
-
 }
