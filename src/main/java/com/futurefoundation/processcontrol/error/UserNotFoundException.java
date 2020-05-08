@@ -1,4 +1,4 @@
-package com.bitcoin.card.error;
+package com.futurefoundation.processcontrol.error;
 
 public class UserNotFoundException extends RuntimeException {
 

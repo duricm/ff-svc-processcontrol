@@ -1,16 +1,15 @@
-package com.bitcoin.card;
+package com.futurefoundation.processcontrol;
 
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
-public class StartBitcoinCardApplication {
+public class StartFFProcessControlApplication {
 	
     // start everything
     public static void main(String[] args) {
     	
-        SpringApplication.run(StartBitcoinCardApplication.class, args);
+        SpringApplication.run(StartFFProcessControlApplication.class, args);
     }
 
 
