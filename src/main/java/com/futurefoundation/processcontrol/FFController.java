@@ -98,6 +98,56 @@ public class FFController {
     }
 
 
+    @PutMapping(value = "/updaterow", consumes = "*/*")
+    @ResponseStatus(HttpStatus.CREATED)
+    public List<FFRow> updateRow(@RequestBody String inputJsonStr) throws Exception {
+    	
+        JSONObject obj = new JSONObject(inputJsonStr);
+    	
+      String output = "The input you sent is :" + inputJsonStr;
+      System.out.println(output);
+      
+ 	 String connectionStr = "jdbc:sqlserver://cfwsql2k14.cloudapp.net:1433;"
+             + "database=CFW.SPREADSHEET;"
+             + "user=mduric;"
+             + "password=mehmed2208;";
+	
+	if (conn == null)
+		conn = DriverManager.getConnection(connectionStr);
+	
+	String sheetId = obj.getString("sheetId");
+	String rowNumber = obj.getString("rowNumber");
+	obj.remove("sheetId");
+	obj.remove("rowNumber");
+	
+	
+	 Iterator keys = obj.keys();
+	 while(keys.hasNext()) {
+	   // loop to get the dynamic key
+	   String key = (String)keys.next();
+	 
+	   String updateSt = "UPDATE SPREADSHEET_DATA SET SHEET_CELL_VALUE = ? WHERE SHEET_ID = ? and SHEET_COLUMN_NAME = (select column_name from CONFIG_COLUMNS where config_id = ? and COLUMN_ORDER = ?) and SHEET_ROW_NUMBER = ?";
+			   
+   	PreparedStatement stmt = conn.prepareStatement(updateSt);  
+   	stmt.setString(1, obj.getString(key));
+   	stmt.setString(2, sheetId);
+   	stmt.setString(3, sheetId);
+   	stmt.setInt(4, Integer.parseInt(key) + 1);
+   	stmt.setString(5, rowNumber);
+   	
+   	System.out.println("Parameters are: " + key + " " + sheetId + " " + obj.getString(key) + " " + rowNumber);
+
+   	int r = stmt.executeUpdate();
+	   
+	   System.out.println(stmt);
+		
+	 }
+	 
+ 		return getRowsInternally(sheetId, true);
+
+    
+    }
+    
     @PostMapping(value = "/addrow", consumes = "*/*")
     @ResponseStatus(HttpStatus.CREATED)
     public List<FFRow> addRow(@RequestBody String inputJsonStr) throws Exception {
@@ -149,6 +199,7 @@ public class FFController {
 
     
     }
+
     
     @GetMapping(value = "/sheetname", produces = MediaType.APPLICATION_JSON_VALUE)
 	public List<String> getSheetNames() throws SQLException {
