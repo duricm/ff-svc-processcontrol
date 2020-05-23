@@ -148,6 +148,52 @@ public class FFController {
     
     }
     
+    @PostMapping(value = "/createsheet", consumes = "*/*")
+    @ResponseStatus(HttpStatus.CREATED)
+    public List<String> createSheet(@RequestBody String sheetName) throws Exception {
+    	
+    	List<String> masterColumnList = new ArrayList<String>();
+
+    	System.out.println("New sheet name is: " + sheetName);
+    	
+    	String connectionStr = "jdbc:sqlserver://cfwsql2k14.cloudapp.net:1433;"
+             + "database=CFW.SPREADSHEET;"
+             + "user=mduric;"
+             + "password=mehmed2208;";
+	
+	if (conn == null)
+		conn = DriverManager.getConnection(connectionStr);
+	
+	Statement s = conn.createStatement();
+	ResultSet r = s.executeQuery("SELECT COLUMN_NAME FROM CONFIG_NAME cn, CONFIG_COLUMNS cc WHERE cn.IS_MASTER = 1 and cn.CONFIG_ID = cc.CONFIG_ID ORDER BY COLUMN_ORDER");
+	
+	while (r.next())
+	 	masterColumnList.add(r.getString("COLUMN_NAME"));
+			
+
+	   String insertSt = "INSERT INTO CONFIG_NAME (CONFIG_NAME, IS_MASTER) VALUES ('" + sheetName + "', 0)";
+
+	   
+	   System.out.println(insertSt);
+	 
+	  s = conn.createStatement();
+	  s.executeUpdate(insertSt);
+	  
+	  s = conn.createStatement();
+	  r = s.executeQuery("SELECT CONFIG_ID FROM CONFIG_NAME WHERE CONFIG_NAME = '" + sheetName + "'");
+	  r.next();
+	  
+	  String configId = r.getString((1));
+	  
+	  for (int i = 0; i < masterColumnList.size(); i++)
+	  {
+		  s.executeUpdate("INSERT INTO CONFIG_COLUMNS VALUES (" + configId + ", '" + masterColumnList.get(i) + "', " + (i + 1) + ")");
+	  }
+
+ 		return getSheetNames();
+    
+    }
+    
     @PostMapping(value = "/addrow", consumes = "*/*")
     @ResponseStatus(HttpStatus.CREATED)
     public List<FFRow> addRow(@RequestBody String inputJsonStr) throws Exception {
@@ -215,7 +261,7 @@ public class FFController {
    	 		conn = DriverManager.getConnection(connectionStr);
 	
    	 	Statement s = conn.createStatement();
-   	 	ResultSet r = s.executeQuery("SELECT CONFIG_NAME FROM CONFIG_NAME");
+   	 	ResultSet r = s.executeQuery("SELECT CONFIG_NAME FROM CONFIG_NAME WHERE IS_MASTER = 0 ORDER BY CONFIG_NAME");
     	
    	 	while (r.next())
    	 		sList.add(r.getString("CONFIG_NAME"));
